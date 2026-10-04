@@ -9,9 +9,9 @@
   <link rel="icon" href="logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:wght@400..700&display=swap">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/moonspam/NanumSquare@2.0/nanumsquare.css">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:wght@400..700&family=Gowun+Batang:wght@400;700&display=swap">
+  <!-- ?v= 값은 배포할 때 커밋 번호로 바뀐다. 파일이 바뀌면 브라우저가 예전 캐시 대신 새 파일을 받게 하기 위함 -->
+  <link rel="stylesheet" href="css/style.css?v=__VERSION__">
 </head>
 <body>
   <header class="top">
@@ -65,7 +65,7 @@
   <script src="vendor/d3.min.js"></script>
   <script src="vendor/topojson-client.min.js"></script>
   <script src="vendor/suncalc.js"></script>
-  <script src="js/scores.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/scores.js?v=__VERSION__"></script>
+  <script src="js/app.js?v=__VERSION__"></script>
 </body>
 </html>

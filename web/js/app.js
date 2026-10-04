@@ -26,13 +26,13 @@
   }
 
   // 지도에 칠할 수 있는 층. type: "score"(출사 지수) | "weather"(범주형 날씨) | "value"(예보 값)
-  // 지수: 나쁨(분홍) → 보통(보라) → 좋음(파랑). 가운데가 무채색이 아니라 보라라서 색상(hue)만으로 읽힌다.
+  // 지수: 나쁨(분홍) → 보통(옅은 무채색) → 좋음(보라)
   const SCORE_LAYERS = Scores.MODES.map((mode) =>
     withScale(
       { ...mode, type: "score", unit: "점" },
       [0, 25, 50, 75, 100],
-      ["#f4a0b5", "#d7a8cf", "#b9b0e6", "#9bb5ee", "#7db8f2"],
-      ["#d9778f", "#a26c9c", "#6f68a8", "#6f8fcd", "#7fb6f0"]
+      ["#e27c92", "#f0b9c4", "#f0edf4", "#bdb7e6", "#857dc8"],
+      ["#e07a91", "#874a64", "#2b2e48", "#655fa8", "#b9b3f2"]
     )
   );
   const WEATHER_LAYERS = [
@@ -55,7 +55,8 @@
 
   const [topo, regions, weather] = await Promise.all(
     ["data/sigungu.topo.json", "data/regions.json", "data/weather_latest.json"].map((url) =>
-      fetch(url).then((res) => {
+      // no-cache: 저장된 사본을 쓰기 전에 서버에 바뀌었는지 물어본다 (예보가 3시간마다 갱신되므로)
+      fetch(url, { cache: "no-cache" }).then((res) => {
         if (!res.ok) throw new Error(`${url}: ${res.status}`);
         return res.json();
       })

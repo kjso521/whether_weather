@@ -14,13 +14,12 @@
   --sido-stroke: rgba(26, 27, 46, 0.3);
   --no-data: #e6e4ea;
   --shadow: 0 1px 2px rgba(26, 27, 46, 0.04), 0 8px 24px rgba(26, 27, 46, 0.06);
-  /* 영문·숫자는 Petrona, 한글은 나눔스퀘어 */
-  --font: "Petrona", "NanumSquare", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  /* 글씨 크기는 이 네 가지만 쓴다 */
+  /* 영문·숫자는 Petrona, 한글은 결이 비슷한 부드러운 명조(고운바탕) */
+  --font: "Petrona", "Gowun Batang", "AppleMyungjo", "Noto Serif KR", serif;
+  /* 글씨 크기는 이 세 가지만 쓴다: 설명(가장 작음), 본문, 제목 */
   --fs-s: 12px;
-  --fs-m: 15px;
+  --fs-m: 14px;
   --fs-l: 20px;
-  --fs-xl: 30px;
 }
 
 /* 다크 모드는 사진의 밤 실루엣 그대로 */
@@ -52,6 +51,8 @@ body {
   font-family: var(--font);
   font-size: var(--fs-m);
   line-height: 1.5;
+  /* 고운바탕은 보통/굵게 두 굵기뿐이라, 획에 얇은 외곽선을 더해 "살짝 굵게"를 만든다 */
+  -webkit-text-stroke: 0.25px currentColor;
 }
 button, input { font: inherit; color: inherit; }
 
@@ -72,7 +73,7 @@ button, input { font: inherit; color: inherit; }
 h1 {
   margin: 0;
   font-weight: 600;
-  font-size: var(--fs-xl);
+  font-size: var(--fs-l);
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
@@ -244,7 +245,7 @@ h3 { margin: 0 0 8px; font-size: var(--fs-s); font-weight: 600; color: var(--mut
 .ranking .points { font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .now { display: flex; align-items: baseline; gap: 10px; margin: 8px 0 12px; }
-.now .temp { font-size: var(--fs-xl); font-weight: 600; line-height: 1; }
+.now .temp { font-size: var(--fs-l); font-weight: 600; line-height: 1; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
 .stat { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
 .stat span { display: block; font-size: var(--fs-s); color: var(--muted); }
@@ -263,7 +264,6 @@ table.hourly { width: 100%; border-collapse: collapse; font-size: var(--fs-s); f
   body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
   .top { width: 100%; padding: 10px 14px; }
   .logo { width: 26px; height: 26px; }
-  h1 { font-size: var(--fs-l); }
   .sub { display: none; }
   #menu { display: block; }
 
