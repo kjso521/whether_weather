@@ -65,6 +65,7 @@ button, input { font: inherit; color: inherit; }
   padding-top: 22px;
   padding-bottom: 16px;
 }
+#labels-toggle { margin-left: auto; flex: none; }
 .logo { display: block; flex: none; }
 h1 {
   margin: 0;
@@ -74,11 +75,11 @@ h1 {
   letter-spacing: -0.02em;
 }
 .sub { margin: 6px 0 0 6px; color: var(--muted); }
-#menu { display: none; margin-left: auto; }
+#menu { display: none; }
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: 340px minmax(0, 1fr);
   gap: 16px;
   align-items: start;
   padding-bottom: 24px;
@@ -116,6 +117,21 @@ h1 {
 }
 .region.selected { stroke: var(--text); stroke-width: 2.2; }
 
+
+/* 지명: 지도 색 위에서도 읽히도록 배경색 테두리(halo)를 두른다 */
+.labels text {
+  font-size: var(--fs-s);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: var(--text);
+  stroke: var(--surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  -webkit-text-stroke: 0;
+  pointer-events: none;
+}
 
 .legend, .picked {
   position: absolute;
@@ -255,7 +271,7 @@ table.hourly { width: 100%; border-collapse: collapse; font-size: var(--fs-s); f
 /* ---- 모바일: 지도 + 슬라이더만 남기고 나머지는 서랍 메뉴로 ---- */
 @media (max-width: 860px) {
   body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-  .top { width: 100%; padding: 10px 14px; }
+  .top { width: 100%; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; }
   .logo { width: 26px; height: 26px; }
   .sub { display: none; }
   #menu { display: block; }
@@ -285,15 +301,16 @@ table.hourly { width: 100%; border-collapse: collapse; font-size: var(--fs-s); f
   .side {
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     bottom: 0;
     z-index: 10;
     width: min(88vw, 360px);
     max-height: none;
-    border-radius: 16px 0 0 16px;
-    border-width: 0 0 0 1px;
+    border-radius: 0 16px 16px 0;
+    border-width: 0 1px 0 0;
+    padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
-    transform: translateX(100%);
+    transform: translateX(-100%);
     visibility: hidden;
     transition: transform 0.25s ease, visibility 0.25s;
   }

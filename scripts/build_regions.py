@@ -1,4 +1,4 @@
-"""시군구 TopoJSON에서 대표점을 뽑아 기상청 격자에 매핑한 regions.json을 만든다.
+"""시군구 TopoJSON에서 대표점을 뽑아 기상청 격자에 매핑한 regions.json을 만든다. (구는 도시 단위로 합친다)
 
 사용법: python3 scripts/build_regions.py
 """
@@ -90,11 +90,38 @@ def display_name(name):
     return f"{m.group(1)} {m.group(2)}" if m else name
 
 
+def city_name(sido, name):
+    """지도에서 하나로 합칠 도시 이름. 구는 너무 잘아서 고르기 어려우므로 도시 단위로 합친다.
+
+    광역시의 구 -> "서울시", 일반 시의 구("수원시 장안구") -> "수원시", 그 밖(시·군)은 None.
+    """
+    if not name.endswith("구"):
+        return None
+    return name.split(" ")[0] if " " in name else f"{sido}시"
+
+
+def merge_cities(districts):
+    """구들을 도시 하나로 묶는다. 대표점은 구 대표점들의 평균에 가장 가까운 구의 것을 쓴다(도시 내부가 보장됨)."""
+    regions, groups = {}, {}
+    for code, d in districts.items():
+        city = city_name(d["sido"], d["name"])
+        if city is None:
+            regions[code] = d
+        else:
+            groups.setdefault((d["sido"], city), []).append(code)
+    for (sido, city), codes in groups.items():
+        lat = sum(districts[c]["lat"] for c in codes) / len(codes)
+        lon = sum(districts[c]["lon"] for c in codes) / len(codes)
+        center = min(codes, key=lambda c: (districts[c]["lat"] - lat) ** 2 + (districts[c]["lon"] - lon) ** 2)
+        regions[min(codes)] = {**districts[center], "name": city, "sido": sido, "members": sorted(codes)}
+    return dict(sorted(regions.items()))
+
+
 def main():
     topo = json.loads(TOPO_PATH.read_text(encoding="utf-8"))
     arcs = decode_arcs(topo)
     (obj,) = topo["objects"].values()
-    regions = {}
+    districts = {}
     for geom in obj["geometries"]:
         props = geom["properties"]
         polys = polygons_of(geom, arcs)
@@ -102,7 +129,7 @@ def main():
         lon, lat = representative_point(largest)
         nx, ny = latlon_to_grid(lat, lon)
         code = props["code"]
-        regions[code] = {
+        districts[code] = {
             "name": display_name(props["name"]),
             "sido": SIDO[code[:2]],
             "lat": round(lat, 4),
@@ -110,9 +137,10 @@ def main():
             "nx": nx,
             "ny": ny,
         }
+    regions = merge_cities(districts)
     OUT_PATH.write_text(json.dumps(regions, ensure_ascii=False, indent=1), encoding="utf-8")
     grids = {(r["nx"], r["ny"]) for r in regions.values()}
-    print(f"시군구 {len(regions)}개, 고유 격자 {len(grids)}개 -> {OUT_PATH.relative_to(ROOT)}")
+    print(f"시군구 {len(districts)}개 -> 지역 {len(regions)}개, 고유 격자 {len(grids)}개 -> {OUT_PATH.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

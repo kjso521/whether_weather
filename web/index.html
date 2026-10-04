@@ -8,6 +8,12 @@
   <meta name="theme-color" content="#070b15" media="(prefers-color-scheme: dark)">
   <title>whether weather — 출사·나들이 전국 웨더맵</title>
   <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="whether weather">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:wght@400..700&family=Gowun+Batang:wght@400;700&display=swap">
@@ -16,26 +22,14 @@
 </head>
 <body>
   <header class="top">
+    <button id="menu" class="icon-btn" type="button" aria-label="메뉴 열기" aria-controls="side" aria-expanded="false">☰</button>
     <img class="logo" src="logo.svg" width="32" height="32" alt="">
     <h1>whether weather</h1>
     <p class="sub">출사와 나들이를 위한 전국 시·군·구 시간별 예보 지도</p>
-    <button id="menu" class="icon-btn" type="button" aria-label="메뉴 열기" aria-controls="side" aria-expanded="false">☰</button>
+    <button id="labels-toggle" class="chip" type="button" aria-pressed="true" title="지도에 지역 이름 표시">지명</button>
   </header>
 
   <main class="layout">
-    <section class="card map-card">
-      <div class="map-wrap">
-        <svg id="map" role="img" aria-label="전국 시군구 지도"></svg>
-        <div class="legend" id="legend"></div>
-        <button class="picked" id="picked" type="button" hidden></button>
-        <div class="tooltip" id="tooltip" hidden></div>
-      </div>
-      <div class="timeline">
-        <input id="hour" type="range" step="1" aria-label="시각">
-        <output id="hour-label" for="hour"></output>
-      </div>
-    </section>
-
     <div class="backdrop" id="backdrop" hidden></div>
     <aside class="card side" id="side" aria-label="설정과 상세 정보">
       <div class="side-head">
@@ -61,6 +55,19 @@
       <p class="note" id="meta"></p>
       <p class="note">날씨: 기상청 단기예보 · 행정구역 경계: 통계청 통계지리정보서비스(2018, 공공누리 제1유형)</p>
     </aside>
+    <section class="card map-card">
+      <div class="map-wrap">
+        <svg id="map" role="img" aria-label="전국 시군구 지도"></svg>
+        <div class="legend" id="legend"></div>
+        <button class="picked" id="picked" type="button" hidden></button>
+        <div class="tooltip" id="tooltip" hidden></div>
+      </div>
+      <div class="timeline">
+        <input id="hour" type="range" step="1" aria-label="시각">
+        <output id="hour-label" for="hour"></output>
+      </div>
+    </section>
+
   </main>
 
   <script src="vendor/d3.min.js"></script>
@@ -68,5 +75,9 @@
   <script src="vendor/suncalc.js"></script>
   <script src="js/scores.js?v=__VERSION__"></script>
   <script src="js/app.js?v=__VERSION__"></script>
+  <script>
+    // 홈 화면에 설치(PWA)할 수 있게 하고, 오프라인일 때 마지막으로 본 화면을 보여주는 서비스 워커
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+  </script>
 </body>
 </html>

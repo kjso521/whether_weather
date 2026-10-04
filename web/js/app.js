@@ -49,6 +49,8 @@
   ];
   const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
   const RANKING_SIZE = 10;
+  const LABEL_PX = 12; // 지명 글씨 크기(--fs-s). 겹침 계산에 쓴다
+  const LABELS_KEY = "ww-labels"; // 지명 표시 여부를 기억하는 localStorage 키
   // 지도를 맞출 범위(본토 + 제주). 울릉도·백령도까지 넣으면 좁은 화면에서 본토가 너무 작아져서, 먼 섬은 이동/확대로 본다.
   const MAINLAND_EXTENT = { type: "MultiPoint", coordinates: [[125.9, 33.1], [129.7, 38.65]] };
   const KOREA_CENTER = { lat: 36.3, lon: 127.8 }; // 모드 대상 시간대를 찾을 때 쓰는 기준점
@@ -75,6 +77,7 @@
     layer: SCORE_LAYERS[0],
     index: Math.max(0, hours.findIndex((h) => h.slice(0, 13) >= nowKst.slice(0, 13))),
     selected: null,
+    labels: localStorage.getItem(LABELS_KEY) !== "off",
   };
 
   const seriesOf = (code) => {
@@ -109,16 +112,6 @@
     const weekday = DAY_NAMES[new Date(`${date}T00:00:00Z`).getUTCDay()];
     return `${month}.${day} (${weekday}) ${hourOf(hours[index])}시`;
   }
-  // 추천 순위에서 묶을 단위. 광역시의 구는 "서울 서울시", 일반 시의 구는 "전북 전주시"로 묶고, 나머지(시·군)는 그대로 둔다.
-  function cityOf(code) {
-    const { sido, name } = regions[code];
-    if (!name.endsWith("구")) return { key: code, sido, name };
-    if (name.includes(" ")) {
-      const city = name.split(" ")[0];
-      return { key: `${sido} ${city}`, sido, name: city };
-    }
-    return { key: sido, sido, name: `${sido}시` };
-  }
   // 범례와 표의 색 견본. 지도와 똑같이 SVG로 그려서, 브라우저의 강제 다크 모드 등이 CSS 배경색만 바꿔 놓아
   // 범례와 지도의 색이 달라지는 일을 막는다.
   const swatch = (color) => `<svg class="swatch" viewBox="0 0 1 1"><rect width="1" height="1" fill="${color}"/></svg>`;
@@ -137,19 +130,70 @@
   // ---- 지도 ----
   const svg = d3.select("#map");
   const object = Object.values(topo.objects)[0];
-  const features = topojson.feature(topo, object).features;
+  // regions.json의 지역 하나가 도형 하나. 구를 합친 도시(members가 있음)는 구 경계를 녹여 한 덩어리로 만든다.
+  const features = Object.entries(regions).map(([code, region]) => {
+    const members = new Set(region.members ?? [code]);
+    const parts = object.geometries.filter((g) => members.has(g.properties.code));
+    const geometry = region.members ? topojson.merge(topo, parts) : topojson.feature(topo, parts[0]).geometry;
+    return { type: "Feature", properties: { code }, geometry };
+  });
   const layer = svg.append("g");
   const paths = layer.selectAll("path.region").data(features).join("path").attr("class", "region");
-  const zoom = d3.zoom().scaleExtent([1, 10]).on("zoom", (event) => layer.attr("transform", event.transform));
+  const labelLayer = layer.append("g").attr("class", "labels");
+  const labels = labelLayer
+    .selectAll("text")
+    .data(features)
+    .join("text")
+    .text((d) => regions[d.properties.code].name);
+  const zoom = d3
+    .zoom()
+    .scaleExtent([1, 10])
+    .on("zoom", (event) => {
+      layer.attr("transform", event.transform);
+      layoutLabels(event.transform);
+    });
   svg.call(zoom);
+
+  // 지명은 확대해도 화면에서 같은 크기로 보이게 하고, 겹치는 것은 우선순위가 높은 것부터 남기고 숨긴다.
+  // 확대할수록 자리가 생겨 더 많은 지명이 나타난다.
+  let labelOrder = [];
+  function layoutLabels(transform = d3.zoomTransform(svg.node())) {
+    labelLayer.attr("display", state.labels ? null : "none");
+    if (!state.labels) return;
+    const { width, height } = svg.node().getBoundingClientRect();
+    const placed = [];
+    const visible = new Set();
+    for (const d of labelOrder) {
+      const x = transform.applyX(d.labelX);
+      const y = transform.applyY(d.labelY);
+      const halfW = (regions[d.properties.code].name.length * LABEL_PX) / 2 + 3;
+      const halfH = LABEL_PX / 2 + 2;
+      if (x < 0 || x > width || y < 0 || y > height) continue;
+      if (placed.some((p) => Math.abs(p.x - x) < p.halfW + halfW && Math.abs(p.y - y) < p.halfH + halfH)) continue;
+      placed.push({ x, y, halfW, halfH });
+      visible.add(d);
+    }
+    labels
+      .attr("display", (d) => (visible.has(d) ? null : "none"))
+      .attr("transform", (d) => `translate(${d.labelX},${d.labelY}) scale(${1 / transform.k})`);
+  }
 
   function layoutMap() {
     const { width, height } = svg.node().getBoundingClientRect();
     if (!width || !height) return;
     svg.attr("viewBox", `0 0 ${width} ${height}`);
-    const path = d3.geoPath(d3.geoMercator().fitSize([width, height], MAINLAND_EXTENT));
+    const projection = d3.geoMercator().fitSize([width, height], MAINLAND_EXTENT);
+    const path = d3.geoPath(projection);
     paths.attr("d", path);
-    svg.call(zoom.transform, d3.zoomIdentity);
+    for (const d of features) {
+      const { lat, lon } = regions[d.properties.code];
+      [d.labelX, d.labelY] = projection([lon, lat]);
+      d.area = path.area(d);
+    }
+    // 지명 우선순위: 구를 합친 큰 도시(서울 등)가 먼저, 그다음은 넓은 지역 순
+    const isCity = (d) => (regions[d.properties.code].members ? 1 : 0);
+    labelOrder = [...features].sort((a, b) => isCity(b) - isCity(a) || b.area - a.area);
+    svg.call(zoom.transform, d3.zoomIdentity); // zoom 이벤트가 지명 배치까지 다시 한다
   }
   layoutMap();
   window.addEventListener("resize", layoutMap);
@@ -287,20 +331,9 @@
     const section = document.getElementById("ranking-section");
     section.hidden = state.layer.type !== "score";
     if (section.hidden) return;
-    // 구 단위는 도시 하나로 묶는다: 점수는 구들의 평균, 누르면 그중 가장 점수가 높은 구를 선택한다.
-    const groups = new Map();
-    for (const code of Object.keys(regions)) {
-      const points = scoreAt(code, state.layer, state.index);
-      if (points == null) continue;
-      const city = cityOf(code);
-      const group = groups.get(city.key) ?? { ...city, total: 0, count: 0, code, best: -1 };
-      group.total += points;
-      group.count += 1;
-      if (points > group.best) Object.assign(group, { best: points, code });
-      groups.set(city.key, group);
-    }
-    const ranked = [...groups.values()]
-      .map((g) => ({ ...g, points: Math.round(g.total / g.count) }))
+    const ranked = Object.keys(regions)
+      .map((code) => ({ code, points: scoreAt(code, state.layer, state.index) }))
+      .filter((d) => d.points != null)
       .sort((a, b) => b.points - a.points)
       .slice(0, RANKING_SIZE);
     const list = d3.select("#ranking");
@@ -320,8 +353,8 @@
         setMenuOpen(false);
         render();
       });
-    buttons.append("span").attr("class", "sido").text((d) => d.sido);
-    buttons.append("span").attr("class", "name").text((d) => d.name);
+    buttons.append("span").attr("class", "sido").text((d) => regions[d.code].sido);
+    buttons.append("span").attr("class", "name").text((d) => regions[d.code].name);
     buttons.append("span").attr("class", "points").text((d) => d.points);
   }
 
@@ -385,6 +418,7 @@
   function render() {
     paths.attr("fill", (d) => fillOf(d.properties.code)).classed("selected", (d) => d.properties.code === state.selected);
     paths.filter((d) => d.properties.code === state.selected).raise();
+    labelLayer.raise(); // 선택한 지역을 맨 위로 올려도 지명은 그 위에 남게 한다
 
     slider.value = state.index;
     hourLabel.textContent = timeLabel(state.index);
@@ -399,6 +433,16 @@
     renderRanking();
     renderDetail();
   }
+
+  const labelsToggle = document.getElementById("labels-toggle");
+  function setLabels(on) {
+    state.labels = on;
+    localStorage.setItem(LABELS_KEY, on ? "on" : "off");
+    labelsToggle.setAttribute("aria-pressed", String(on));
+    layoutLabels();
+  }
+  labelsToggle.addEventListener("click", () => setLabels(!state.labels));
+  setLabels(state.labels);
 
   darkQuery.addEventListener("change", () => {
     legendFor = null;
