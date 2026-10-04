@@ -118,17 +118,14 @@ h1 {
 .region.selected { stroke: var(--text); stroke-width: 2.2; }
 
 
-/* 지명: 지도 색 위에서도 읽히도록 배경색 테두리(halo)를 두른다 */
+/* 지명: 눈에 띄지 않게 가장 작고 가는 글씨로, 테두리 없이 */
 .labels text {
   font-size: var(--fs-s);
-  font-weight: 700;
+  font-weight: 400;
   text-anchor: middle;
   dominant-baseline: central;
   fill: var(--text);
-  stroke: var(--surface);
-  stroke-width: 3px;
-  stroke-linejoin: round;
-  paint-order: stroke;
+  stroke: none;
   -webkit-text-stroke: 0;
   pointer-events: none;
 }

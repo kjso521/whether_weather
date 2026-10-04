@@ -50,7 +50,7 @@
   const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
   const RANKING_SIZE = 10;
   const LABEL_PX = 12; // 지명 글씨 크기(--fs-s). 겹침 계산에 쓴다
-  const LABELS_KEY = "ww-labels"; // 지명 표시 여부를 기억하는 localStorage 키
+  const LABELS_KEY = "ww-labels-shown"; // 지명 표시 여부를 기억하는 localStorage 키
   // 지도를 맞출 범위(본토 + 제주). 울릉도·백령도까지 넣으면 좁은 화면에서 본토가 너무 작아져서, 먼 섬은 이동/확대로 본다.
   const MAINLAND_EXTENT = { type: "MultiPoint", coordinates: [[125.9, 33.1], [129.7, 38.65]] };
   const KOREA_CENTER = { lat: 36.3, lon: 127.8 }; // 모드 대상 시간대를 찾을 때 쓰는 기준점
@@ -77,7 +77,7 @@
     layer: SCORE_LAYERS[0],
     index: Math.max(0, hours.findIndex((h) => h.slice(0, 13) >= nowKst.slice(0, 13))),
     selected: null,
-    labels: localStorage.getItem(LABELS_KEY) !== "off",
+    labels: localStorage.getItem(LABELS_KEY) === "on", // 기본은 지명 숨김
   };
 
   const seriesOf = (code) => {
@@ -115,6 +115,8 @@
   // 범례와 표의 색 견본. 지도와 똑같이 SVG로 그려서, 브라우저의 강제 다크 모드 등이 CSS 배경색만 바꿔 놓아
   // 범례와 지도의 색이 달라지는 일을 막는다.
   const swatch = (color) => `<svg class="swatch" viewBox="0 0 1 1"><rect width="1" height="1" fill="${color}"/></svg>`;
+  // 지도 위 지명은 "서울", "용인", "고성"처럼 시·군·구를 뗀 짧은 이름으로 쓴다
+  const labelOf = (code) => regions[code].name.replace(/[시군구]$/, "");
   const fullName = (code) => `${regions[code].sido} ${regions[code].name}`;
 
   // 한 줄 요약: "맑음 · 18° · 나들이 92점"
@@ -144,7 +146,7 @@
     .selectAll("text")
     .data(features)
     .join("text")
-    .text((d) => regions[d.properties.code].name);
+    .text((d) => labelOf(d.properties.code));
   const zoom = d3
     .zoom()
     .scaleExtent([1, 10])
@@ -166,7 +168,7 @@
     for (const d of labelOrder) {
       const x = transform.applyX(d.labelX);
       const y = transform.applyY(d.labelY);
-      const halfW = (regions[d.properties.code].name.length * LABEL_PX) / 2 + 3;
+      const halfW = (labelOf(d.properties.code).length * LABEL_PX) / 2 + 3;
       const halfH = LABEL_PX / 2 + 2;
       if (x < 0 || x > width || y < 0 || y > height) continue;
       if (placed.some((p) => Math.abs(p.x - x) < p.halfW + halfW && Math.abs(p.y - y) < p.halfH + halfH)) continue;
@@ -437,11 +439,13 @@
   const labelsToggle = document.getElementById("labels-toggle");
   function setLabels(on) {
     state.labels = on;
-    localStorage.setItem(LABELS_KEY, on ? "on" : "off");
     labelsToggle.setAttribute("aria-pressed", String(on));
     layoutLabels();
   }
-  labelsToggle.addEventListener("click", () => setLabels(!state.labels));
+  labelsToggle.addEventListener("click", () => {
+    setLabels(!state.labels);
+    localStorage.setItem(LABELS_KEY, state.labels ? "on" : "off");
+  });
   setLabels(state.labels);
 
   darkQuery.addEventListener("change", () => {
