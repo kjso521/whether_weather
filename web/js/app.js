@@ -109,7 +109,7 @@
     const weekday = DAY_NAMES[new Date(`${date}T00:00:00Z`).getUTCDay()];
     return `${month}.${day} (${weekday}) ${hourOf(hours[index])}시`;
   }
-  // 추천 순위에서 묶을 단위. 광역시의 구는 "서울", 일반 시의 구는 "전주시"로 묶고, 나머지(시·군)는 그대로 둔다.
+  // 추천 순위에서 묶을 단위. 광역시의 구는 "서울 서울시", 일반 시의 구는 "전북 전주시"로 묶고, 나머지(시·군)는 그대로 둔다.
   function cityOf(code) {
     const { sido, name } = regions[code];
     if (!name.endsWith("구")) return { key: code, sido, name };
@@ -117,8 +117,11 @@
       const city = name.split(" ")[0];
       return { key: `${sido} ${city}`, sido, name: city };
     }
-    return { key: sido, sido: "", name: sido };
+    return { key: sido, sido, name: `${sido}시` };
   }
+  // 범례와 표의 색 견본. 지도와 똑같이 SVG로 그려서, 브라우저의 강제 다크 모드 등이 CSS 배경색만 바꿔 놓아
+  // 범례와 지도의 색이 달라지는 일을 막는다.
+  const swatch = (color) => `<svg class="swatch" viewBox="0 0 1 1"><rect width="1" height="1" fill="${color}"/></svg>`;
   const fullName = (code) => `${regions[code].sido} ${regions[code].name}`;
 
   // 한 줄 요약: "맑음 · 18° · 나들이 92점"
@@ -255,12 +258,24 @@
         .data(Object.values(WEATHER))
         .join("span")
         .attr("class", "legend-item")
-        .html((d) => `<i class="swatch" style="background:${d.color}"></i>${d.label}`);
+        .html((d) => `${swatch(d.color)}${d.label}`);
       return;
     }
     const domain = scale.domain();
-    const stops = d3.range(0, 1.01, 0.1).map((t) => scale(domain[0] + t * (domain.at(-1) - domain[0])));
-    legend.append("div").attr("class", "legend-bar").style("background", `linear-gradient(to right, ${stops.join(",")})`);
+    const stops = d3.range(0, 1.001, 0.025).map((t) => scale(domain[0] + t * (domain.at(-1) - domain[0])));
+    legend
+      .append("svg")
+      .attr("class", "legend-bar")
+      .attr("viewBox", `0 0 ${stops.length} 1`)
+      .attr("preserveAspectRatio", "none")
+      .attr("shape-rendering", "crispEdges")
+      .selectAll("rect")
+      .data(stops)
+      .join("rect")
+      .attr("x", (d, i) => i)
+      .attr("width", 1)
+      .attr("height", 1)
+      .attr("fill", (d) => d);
     legend
       .append("div")
       .attr("class", "legend-ticks")
@@ -361,7 +376,7 @@
       .html((j) => {
         const k = weatherKind(code, j);
         return `<td>${hourOf(hours[j])}시</td>
-          <td><i class="swatch" style="background:${k ? WEATHER[k].color : "var(--no-data)"}"></i> ${k ? WEATHER[k].label : "–"}</td>
+          <td>${swatch(k ? WEATHER[k].color : "var(--no-data)")} ${k ? WEATHER[k].label : "–"}</td>
           <td>${fmt(valueAt(code, "TMP", j), "°")}</td><td>${fmt(valueAt(code, "POP", j), "%")}</td>
           <td>${fmt(valueAt(code, "REH", j), "%")}</td><td>${fmt(valueAt(code, "WSD", j))}</td>
           ${isScore ? `<td>${fmt(scoreAt(code, state.layer, j))}</td>` : ""}`;

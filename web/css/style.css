@@ -11,7 +11,7 @@
   --accent: #6f68a8;
   --accent-strong: #4b4273;
   --map-stroke: #ffffff;
-  --sido-stroke: rgba(26, 27, 46, 0.3);
+  --sido-stroke: #ffffff; /* 시·도 경계도 흰색으로 통일하고 굵기로만 구분한다 */
   --no-data: #e6e4ea;
   --shadow: 0 1px 2px rgba(26, 27, 46, 0.04), 0 8px 24px rgba(26, 27, 46, 0.06);
   /* 영문·숫자는 Petrona, 한글은 결이 비슷한 부드러운 명조(고운바탕) */
@@ -34,7 +34,7 @@
     --accent: #c2657c;
     --accent-strong: #e79aa8;
     /* 다크 모드의 경계는 밝은 선이 아니라 배경색의 "틈"으로 그린다. 밝은 선은 색면 위에서 뿌옇게 번져 보인다. */
-    --map-stroke: #0a0e1c;
+    --map-stroke: #05070f;
     --sido-stroke: #05070f;
     --no-data: #1e2338;
     --shadow: none;
@@ -109,17 +109,20 @@ h1 {
 
 .region {
   stroke: var(--map-stroke);
-  stroke-width: 0.5;
+  stroke-width: 0.6;
   vector-effect: non-scaling-stroke;
   transition: fill 0.25s ease;
   cursor: pointer;
 }
-.region:hover { stroke: var(--text); stroke-width: 1.2; }
+/* 터치 기기에서는 누른 뒤에도 hover가 남아 경계가 밝게 보이므로, 마우스가 있을 때만 적용한다 */
+@media (hover: hover) {
+  .region:hover { stroke: var(--text); stroke-width: 1.2; }
+}
 .region.selected { stroke: var(--text); stroke-width: 2.2; }
 .sido-border {
   fill: none;
   stroke: var(--sido-stroke);
-  stroke-width: 1.2;
+  stroke-width: 1.6;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
@@ -136,8 +139,8 @@ h1 {
 .legend-title { color: var(--text); font-weight: 600; margin-bottom: 4px; }
 .legend-items { display: flex; flex-wrap: wrap; gap: 4px 10px; max-width: 190px; }
 .legend-item { display: inline-flex; align-items: center; gap: 5px; }
-.swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
-.legend-bar { width: 150px; height: 10px; border-radius: 5px; }
+.swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; vertical-align: -1px; }
+.legend-bar { display: block; width: 150px; height: 10px; border-radius: 5px; }
 .legend-ticks { display: flex; justify-content: space-between; margin-top: 3px; }
 
 /* 모바일에서 선택한 지역을 지도 위에 한 줄로 보여준다 (누르면 메뉴의 상세로 이동) */
