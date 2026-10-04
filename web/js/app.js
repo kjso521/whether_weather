@@ -49,7 +49,7 @@
   ];
   const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
   const RANKING_SIZE = 10;
-  const LABEL_PX = 12; // 지명 글씨 크기(--fs-s). 겹침 계산에 쓴다
+  const LABEL_PX = 10; // 지명 글씨 크기(--fs-label). 겹침 계산에 쓴다
   const LABELS_KEY = "ww-labels-shown"; // 지명 표시 여부를 기억하는 localStorage 키
   // 지도를 맞출 범위(본토 + 제주). 울릉도·백령도까지 넣으면 좁은 화면에서 본토가 너무 작아져서, 먼 섬은 이동/확대로 본다.
   const MAINLAND_EXTENT = { type: "MultiPoint", coordinates: [[125.9, 33.1], [129.7, 38.65]] };
