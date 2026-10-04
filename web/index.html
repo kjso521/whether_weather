@@ -7,7 +7,9 @@
   <meta name="theme-color" content="#070b15" media="(prefers-color-scheme: dark)">
   <title>whether weather — 출사·나들이 전국 웨더맵</title>
   <link rel="icon" href="logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Petrona:wght@400..700&family=Gowun+Batang:wght@400;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -27,7 +29,6 @@
         <div class="tooltip" id="tooltip" hidden></div>
       </div>
       <div class="timeline">
-        <button id="play" class="icon-btn" type="button" aria-label="재생">▶</button>
         <input id="hour" type="range" step="1" aria-label="시각">
         <output id="hour-label" for="hour"></output>
       </div>
@@ -47,10 +48,6 @@
       <section>
         <h3>날씨</h3>
         <div class="chips" id="weather-chips"></div>
-      </section>
-      <section>
-        <h3>날짜</h3>
-        <div class="chips" id="date-chips"></div>
       </section>
       <section id="ranking-section">
         <h3>이 시각 추천 지역</h3>

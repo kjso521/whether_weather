@@ -1,38 +1,53 @@
 /* global d3, topojson, Scores */
 (async function () {
-  // 색은 노을 사진(docs/color.jpeg)에서 뽑은 팔레트를 쓴다. 창문 불빛의 따뜻한 색/차가운 색이 맑음/비.
+  // 색은 노을 사진(docs/color.jpeg)에서 뽑은 팔레트를 쓴다. 밝은 화면과 다크 모드의 색을 따로 둔다:
+  // 다크 모드에서는 "보통/낮음"이 어두운 배경 쪽으로 물러나고 양 끝만 밝게 보여야 구분이 된다.
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const themed = (light, dark) => (darkQuery.matches ? dark : light);
+  const weatherKindOf = (label, light, dark) => ({ label, get color() { return themed(light, dark); } });
   const WEATHER = {
-    clear: { label: "맑음", color: "#f2c48a" },
-    partly: { label: "구름많음", color: "#dcd9e6" },
-    cloudy: { label: "흐림", color: "#a39fb3" },
-    rain: { label: "비", color: "#6f9cc0" },
-    sleet: { label: "비/눈", color: "#8f8bb5" },
-    snow: { label: "눈", color: "#cfd9ea" },
-    shower: { label: "소나기", color: "#456f96" },
+    clear: weatherKindOf("맑음", "#f2c48a", "#e6b877"),
+    partly: weatherKindOf("구름많음", "#dcd9e6", "#8884a0"),
+    cloudy: weatherKindOf("흐림", "#a39fb3", "#4f4e66"),
+    rain: weatherKindOf("비", "#6f9cc0", "#5b90c0"),
+    sleet: weatherKindOf("비/눈", "#8f8bb5", "#7d79b3"),
+    snow: weatherKindOf("눈", "#cfd9ea", "#c6d2ea"),
+    shower: weatherKindOf("소나기", "#456f96", "#3d6f9e"),
   };
   const PTY_KIND = { 1: "rain", 2: "sleet", 3: "snow", 4: "shower" };
   const SKY_KIND = { 1: "clear", 3: "partly", 4: "cloudy" };
-  const LOW = "#f1eff6"; // 연속 색상 척도의 낮은 쪽(배경과 같은 계열)
-  // 지수: 나쁨(어두운 남색 하늘) → 보통(옅은 연보라) → 좋음(지평선의 노을빛)
-  const SCORE_SCALE = d3
-    .scaleLinear([0, 25, 50, 75, 100], ["#454475", "#8f8bb5", "#ece8f1", "#e79aa8", "#c9405f"])
-    .clamp(true);
+  const LOW = { light: "#f1eff6", dark: "#262a42" }; // 연속 색상 척도의 낮은 쪽(배경과 같은 계열)
+
+  // layer.scale 이 현재 테마의 색 척도를 돌려주게 한다
+  function withScale(layer, domain, lightColors, darkColors) {
+    const light = d3.scaleLinear(domain, lightColors).clamp(true);
+    const dark = d3.scaleLinear(domain, darkColors).clamp(true);
+    return Object.defineProperty(layer, "scale", { get: () => themed(light, dark) });
+  }
 
   // 지도에 칠할 수 있는 층. type: "score"(출사 지수) | "weather"(범주형 날씨) | "value"(예보 값)
-  const SCORE_LAYERS = Scores.MODES.map((mode) => ({ ...mode, type: "score", unit: "점", scale: SCORE_SCALE }));
+  // 지수: 나쁨(분홍) → 보통 → 좋음(밝은 보라)
+  const SCORE_LAYERS = Scores.MODES.map((mode) =>
+    withScale(
+      { ...mode, type: "score", unit: "점" },
+      [0, 25, 50, 75, 100],
+      ["#d4566e", "#eaa3b0", "#ece8f1", "#aaa3dc", "#6c63b5"],
+      ["#e0607a", "#84405c", "#2b2e48", "#5f59a6", "#b3acf2"]
+    )
+  );
   const WEATHER_LAYERS = [
     { id: "weather", label: "날씨", type: "weather" },
-    { id: "POP", label: "강수확률", type: "value", unit: "%", scale: d3.scaleLinear([0, 100], [LOW, "#456f96"]).clamp(true) },
-    {
-      id: "TMP", label: "기온", type: "value", unit: "°",
-      scale: d3.scaleLinear([-10, 0, 10, 20, 30, 38], ["#393967", "#8f8bb5", LOW, "#f2c48a", "#d4566e", "#8e2f4a"]).clamp(true),
-    },
-    { id: "WSD", label: "풍속", type: "value", unit: "m/s", scale: d3.scaleLinear([0, 12], [LOW, "#5e4273"]).clamp(true) },
-    { id: "REH", label: "습도", type: "value", unit: "%", scale: d3.scaleLinear([0, 100], [LOW, "#4f6b82"]).clamp(true) },
+    withScale({ id: "POP", label: "강수확률", type: "value", unit: "%" }, [0, 100], [LOW.light, "#456f96"], [LOW.dark, "#7fb5e0"]),
+    withScale(
+      { id: "TMP", label: "기온", type: "value", unit: "°" },
+      [-10, 0, 10, 20, 30, 38],
+      ["#393967", "#8f8bb5", LOW.light, "#f2c48a", "#d4566e", "#8e2f4a"],
+      ["#8f9af0", "#4f5596", LOW.dark, "#a67c4a", "#e0607a", "#ffa0b4"]
+    ),
+    withScale({ id: "WSD", label: "풍속", type: "value", unit: "m/s" }, [0, 12], [LOW.light, "#5e4273"], [LOW.dark, "#c09be6"]),
+    withScale({ id: "REH", label: "습도", type: "value", unit: "%" }, [0, 100], [LOW.light, "#4f6b82"], [LOW.dark, "#8fb8d8"]),
   ];
   const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
-  const RELATIVE_DAY = { "-1": "어제", 0: "오늘", 1: "내일", 2: "모레" };
-  const PLAY_INTERVAL_MS = 700;
   const RANKING_SIZE = 10;
   // 지도를 맞출 범위(본토 + 제주). 울릉도·백령도까지 넣으면 좁은 화면에서 본토가 너무 작아져서, 먼 섬은 이동/확대로 본다.
   const MAINLAND_EXTENT = { type: "MultiPoint", coordinates: [[125.9, 33.1], [129.7, 38.65]] };
@@ -53,15 +68,12 @@
   const hourDates = hours.map((h) => new Date(h)); // 천문 계산용 절대 시각
   const dateOf = (h) => h.slice(0, 10);
   const hourOf = (h) => Number(h.slice(11, 13));
-  const dates = [...new Set(hours.map(dateOf))];
   const nowKst = new Date(Date.now() + 9 * 3600 * 1000).toISOString();
-  const today = nowKst.slice(0, 10);
 
   const state = {
     layer: SCORE_LAYERS[0],
     index: Math.max(0, hours.findIndex((h) => h.slice(0, 13) >= nowKst.slice(0, 13))),
     selected: null,
-    timer: null,
   };
 
   const seriesOf = (code) => {
@@ -90,14 +102,12 @@
     return value == null ? "var(--no-data)" : state.layer.scale(value);
   }
 
-  function dateLabel(date, relative = true) {
-    const diff = Math.round((Date.parse(date) - Date.parse(today)) / 86400000);
+  function timeLabel(index) {
+    const date = dateOf(hours[index]);
     const [, month, day] = date.split("-").map(Number);
     const weekday = DAY_NAMES[new Date(`${date}T00:00:00Z`).getUTCDay()];
-    const text = `${month}.${day} (${weekday})`;
-    return relative && RELATIVE_DAY[diff] ? `${RELATIVE_DAY[diff]} ${text}` : text;
+    return `${month}.${day} (${weekday}) ${hourOf(hours[index])}시`;
   }
-  const timeLabel = (index) => `${dateLabel(dateOf(hours[index]), false)} ${hourOf(hours[index])}시`;
   const fullName = (code) => `${regions[code].sido} ${regions[code].name}`;
 
   // 한 줄 요약: "맑음 · 18° · 나들이 92점"
@@ -205,21 +215,6 @@
   const isCurrentLayer = (d) => d === state.layer;
   const updateScoreChips = makeChips("#score-chips", SCORE_LAYERS, isCurrentLayer, pickLayer);
   const updateWeatherChips = makeChips("#weather-chips", WEATHER_LAYERS, isCurrentLayer, pickLayer);
-  const updateDateChips = makeChips(
-    "#date-chips",
-    dates.map((date) => ({ date, label: dateLabel(date) })),
-    (d) => d.date === dateOf(hours[state.index]),
-    (d) => {
-      // 같은 시각을 유지한 채 날짜만 옮긴다 (그 시각이 없으면 가장 가까운 시각)
-      const wanted = hourOf(hours[state.index]);
-      const candidates = [...hours.keys()].filter((i) => dateOf(hours[i]) === d.date);
-      state.index = candidates.reduce((best, i) =>
-        Math.abs(hourOf(hours[i]) - wanted) < Math.abs(hourOf(hours[best]) - wanted) ? i : best
-      );
-      render();
-    }
-  );
-
   const slider = document.getElementById("hour");
   const hourLabel = document.getElementById("hour-label");
   slider.min = 0;
@@ -228,20 +223,6 @@
     state.index = Number(slider.value);
     render();
   });
-
-  const playButton = document.getElementById("play");
-  function setPlaying(on) {
-    clearInterval(state.timer);
-    state.timer = on
-      ? setInterval(() => {
-          state.index = (state.index + 1) % hours.length;
-          render();
-        }, PLAY_INTERVAL_MS)
-      : null;
-    playButton.textContent = on ? "❚❚" : "▶";
-    playButton.setAttribute("aria-label", on ? "일시정지" : "재생");
-  }
-  playButton.addEventListener("click", () => setPlaying(!state.timer));
 
   // ---- 범례 ----
   function renderLegend() {
@@ -367,7 +348,6 @@
 
     updateScoreChips();
     updateWeatherChips();
-    updateDateChips();
     if (legendFor !== state.layer) {
       renderLegend();
       document.getElementById("layer-note").textContent = state.layer.note ?? "";
@@ -376,6 +356,11 @@
     renderRanking();
     renderDetail();
   }
+
+  darkQuery.addEventListener("change", () => {
+    legendFor = null;
+    render();
+  });
 
   const meta = document.getElementById("meta");
   meta.textContent = `예보 발표 ${weather.baseTime.slice(5, 16).replace("-", ".").replace("T", " ")}${weather.sample ? " · 샘플 데이터(실제 날씨 아님)" : ""}`;

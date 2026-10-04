@@ -1,16 +1,7 @@
-/* 영문 글자는 Montserrat, 그 밖(한글·한자·숫자·특수문자)은 Pretendard JP.
-   Montserrat을 영문 알파벳 범위로만 한정해서, 나머지 글자는 다음 글꼴로 넘어가게 한다. */
-@font-face {
-  font-family: "Montserrat";
-  src: url("../vendor/fonts/montserrat-latin.woff2") format("woff2");
-  font-weight: 100 900;
-  font-display: swap;
-  unicode-range: U+0041-005A, U+0061-007A;
-}
-
 /* 색은 직접 찍은 노을 사진(docs/color.jpeg)에서 뽑았다:
    하늘 위쪽 남색 #393967 → 보라 #5e4273 → 장미색 #964865 → 지평선 노을 #b74d63, 건물 실루엣 #050a14 */
 :root {
+  color-scheme: light dark; /* 슬라이더 같은 기본 컨트롤도 테마를 따르게 한다 */
   --bg: #ffffff;
   --surface: #ffffff;
   --surface-2: #f4f2f8;
@@ -22,7 +13,8 @@
   --map-stroke: #ffffff;
   --no-data: #dedce4;
   --shadow: 0 1px 2px rgba(26, 27, 46, 0.04), 0 8px 24px rgba(26, 27, 46, 0.06);
-  --font: "Montserrat", "Pretendard JP Variable", "Pretendard JP", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  /* 영문·숫자는 Petrona, 한글은 결이 비슷한 부드러운 명조(고운바탕) */
+  --font: "Petrona", "Gowun Batang", "AppleMyungjo", "Noto Serif KR", serif;
   /* 글씨 크기는 이 네 가지만 쓴다 */
   --fs-s: 12px;
   --fs-m: 15px;
@@ -41,8 +33,8 @@
     --border: #2a2f4a;
     --accent: #b74d63;
     --accent-strong: #e79aa8;
-    --map-stroke: #070b15;
-    --no-data: #262a3f;
+    --map-stroke: #3b405c;
+    --no-data: #151929;
     --shadow: none;
   }
 }
