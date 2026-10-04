@@ -8,13 +8,14 @@
   --text: #1a1b2e;
   --muted: #6a6880;
   --border: #e7e4ee;
-  --accent: #4b4273;
-  --accent-strong: #393967;
+  --accent: #6f68a8;
+  --accent-strong: #4b4273;
   --map-stroke: #ffffff;
-  --no-data: #dedce4;
+  --sido-stroke: rgba(26, 27, 46, 0.3);
+  --no-data: #e6e4ea;
   --shadow: 0 1px 2px rgba(26, 27, 46, 0.04), 0 8px 24px rgba(26, 27, 46, 0.06);
-  /* 영문·숫자는 Petrona, 한글은 결이 비슷한 부드러운 명조(고운바탕) */
-  --font: "Petrona", "Gowun Batang", "AppleMyungjo", "Noto Serif KR", serif;
+  /* 영문·숫자는 Petrona, 한글은 나눔스퀘어 */
+  --font: "Petrona", "NanumSquare", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   /* 글씨 크기는 이 네 가지만 쓴다 */
   --fs-s: 12px;
   --fs-m: 15px;
@@ -31,10 +32,12 @@
     --text: #f1eef6;
     --muted: #a09cb5;
     --border: #2a2f4a;
-    --accent: #b74d63;
+    --accent: #c2657c;
     --accent-strong: #e79aa8;
-    --map-stroke: #3b405c;
-    --no-data: #151929;
+    /* 다크 모드의 경계는 밝은 선이 아니라 배경색의 "틈"으로 그린다. 밝은 선은 색면 위에서 뿌옇게 번져 보인다. */
+    --map-stroke: #0a0e1c;
+    --sido-stroke: #05070f;
+    --no-data: #1e2338;
     --shadow: none;
   }
 }
@@ -114,9 +117,8 @@ h1 {
 .region.selected { stroke: var(--text); stroke-width: 2.2; }
 .sido-border {
   fill: none;
-  stroke: var(--text);
-  stroke-opacity: 0.35;
-  stroke-width: 0.9;
+  stroke: var(--sido-stroke);
+  stroke-width: 1.2;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }

@@ -6,13 +6,13 @@
   const themed = (light, dark) => (darkQuery.matches ? dark : light);
   const weatherKindOf = (label, light, dark) => ({ label, get color() { return themed(light, dark); } });
   const WEATHER = {
-    clear: weatherKindOf("맑음", "#f2c48a", "#e6b877"),
-    partly: weatherKindOf("구름많음", "#dcd9e6", "#8884a0"),
-    cloudy: weatherKindOf("흐림", "#a39fb3", "#4f4e66"),
-    rain: weatherKindOf("비", "#6f9cc0", "#5b90c0"),
-    sleet: weatherKindOf("비/눈", "#8f8bb5", "#7d79b3"),
-    snow: weatherKindOf("눈", "#cfd9ea", "#c6d2ea"),
-    shower: weatherKindOf("소나기", "#456f96", "#3d6f9e"),
+    clear: weatherKindOf("맑음", "#f6d3a3", "#e6b877"),
+    partly: weatherKindOf("구름많음", "#e3e0ec", "#8884a0"),
+    cloudy: weatherKindOf("흐림", "#b6b2c4", "#4f4e66"),
+    rain: weatherKindOf("비", "#8db3d3", "#5b90c0"),
+    sleet: weatherKindOf("비/눈", "#a8a4c9", "#7d79b3"),
+    snow: weatherKindOf("눈", "#dbe3f0", "#c6d2ea"),
+    shower: weatherKindOf("소나기", "#6a90b5", "#3d6f9e"),
   };
   const PTY_KIND = { 1: "rain", 2: "sleet", 3: "snow", 4: "shower" };
   const SKY_KIND = { 1: "clear", 3: "partly", 4: "cloudy" };
@@ -26,26 +26,26 @@
   }
 
   // 지도에 칠할 수 있는 층. type: "score"(출사 지수) | "weather"(범주형 날씨) | "value"(예보 값)
-  // 지수: 나쁨(분홍) → 보통 → 좋음(밝은 보라)
+  // 지수: 나쁨(분홍) → 보통(보라) → 좋음(파랑). 가운데가 무채색이 아니라 보라라서 색상(hue)만으로 읽힌다.
   const SCORE_LAYERS = Scores.MODES.map((mode) =>
     withScale(
       { ...mode, type: "score", unit: "점" },
       [0, 25, 50, 75, 100],
-      ["#d4566e", "#eaa3b0", "#ece8f1", "#aaa3dc", "#6c63b5"],
-      ["#e0607a", "#84405c", "#2b2e48", "#5f59a6", "#b3acf2"]
+      ["#f4a0b5", "#d7a8cf", "#b9b0e6", "#9bb5ee", "#7db8f2"],
+      ["#d9778f", "#a26c9c", "#6f68a8", "#6f8fcd", "#7fb6f0"]
     )
   );
   const WEATHER_LAYERS = [
     { id: "weather", label: "날씨", type: "weather" },
-    withScale({ id: "POP", label: "강수확률", type: "value", unit: "%" }, [0, 100], [LOW.light, "#456f96"], [LOW.dark, "#7fb5e0"]),
+    withScale({ id: "POP", label: "강수확률", type: "value", unit: "%" }, [0, 100], [LOW.light, "#6f9cc0"], [LOW.dark, "#7fb5e0"]),
     withScale(
       { id: "TMP", label: "기온", type: "value", unit: "°" },
       [-10, 0, 10, 20, 30, 38],
-      ["#393967", "#8f8bb5", LOW.light, "#f2c48a", "#d4566e", "#8e2f4a"],
+      ["#5c5fa0", "#a9a6d0", LOW.light, "#f5d3a6", "#ee8fa3", "#c9506a"],
       ["#8f9af0", "#4f5596", LOW.dark, "#a67c4a", "#e0607a", "#ffa0b4"]
     ),
-    withScale({ id: "WSD", label: "풍속", type: "value", unit: "m/s" }, [0, 12], [LOW.light, "#5e4273"], [LOW.dark, "#c09be6"]),
-    withScale({ id: "REH", label: "습도", type: "value", unit: "%" }, [0, 100], [LOW.light, "#4f6b82"], [LOW.dark, "#8fb8d8"]),
+    withScale({ id: "WSD", label: "풍속", type: "value", unit: "m/s" }, [0, 12], [LOW.light, "#8d76b0"], [LOW.dark, "#c09be6"]),
+    withScale({ id: "REH", label: "습도", type: "value", unit: "%" }, [0, 100], [LOW.light, "#7d9bb5"], [LOW.dark, "#8fb8d8"]),
   ];
   const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
   const RANKING_SIZE = 10;
@@ -108,6 +108,16 @@
     const weekday = DAY_NAMES[new Date(`${date}T00:00:00Z`).getUTCDay()];
     return `${month}.${day} (${weekday}) ${hourOf(hours[index])}시`;
   }
+  // 추천 순위에서 묶을 단위. 광역시의 구는 "서울", 일반 시의 구는 "전주시"로 묶고, 나머지(시·군)는 그대로 둔다.
+  function cityOf(code) {
+    const { sido, name } = regions[code];
+    if (!name.endsWith("구")) return { key: code, sido, name };
+    if (name.includes(" ")) {
+      const city = name.split(" ")[0];
+      return { key: `${sido} ${city}`, sido, name: city };
+    }
+    return { key: sido, sido: "", name: sido };
+  }
   const fullName = (code) => `${regions[code].sido} ${regions[code].name}`;
 
   // 한 줄 요약: "맑음 · 18° · 나들이 92점"
@@ -160,9 +170,16 @@
     })
     .on("pointerleave", () => (tooltip.hidden = true))
     .on("click", (event, d) => {
-      state.selected = d.properties.code;
+      // 선택된 지역을 다시 누르면 선택 해제
+      state.selected = state.selected === d.properties.code ? null : d.properties.code;
       render();
     });
+  // 지도의 빈 곳(바다)을 누르면 선택 해제. 끌어서 옮길 때는 d3.zoom이 click을 막아 주므로 해제되지 않는다.
+  svg.on("click", (event) => {
+    if (event.target !== svg.node() || !state.selected) return;
+    state.selected = null;
+    render();
+  });
 
   // ---- 서랍 메뉴(모바일) ----
   const side = document.getElementById("side");
@@ -257,9 +274,20 @@
     const section = document.getElementById("ranking-section");
     section.hidden = state.layer.type !== "score";
     if (section.hidden) return;
-    const ranked = Object.keys(regions)
-      .map((code) => ({ code, points: scoreAt(code, state.layer, state.index) }))
-      .filter((d) => d.points != null)
+    // 구 단위는 도시 하나로 묶는다: 점수는 구들의 평균, 누르면 그중 가장 점수가 높은 구를 선택한다.
+    const groups = new Map();
+    for (const code of Object.keys(regions)) {
+      const points = scoreAt(code, state.layer, state.index);
+      if (points == null) continue;
+      const city = cityOf(code);
+      const group = groups.get(city.key) ?? { ...city, total: 0, count: 0, code, best: -1 };
+      group.total += points;
+      group.count += 1;
+      if (points > group.best) Object.assign(group, { best: points, code });
+      groups.set(city.key, group);
+    }
+    const ranked = [...groups.values()]
+      .map((g) => ({ ...g, points: Math.round(g.total / g.count) }))
       .sort((a, b) => b.points - a.points)
       .slice(0, RANKING_SIZE);
     const list = d3.select("#ranking");
@@ -279,8 +307,8 @@
         setMenuOpen(false);
         render();
       });
-    buttons.append("span").attr("class", "sido").text((d) => regions[d.code].sido);
-    buttons.append("span").attr("class", "name").text((d) => regions[d.code].name);
+    buttons.append("span").attr("class", "sido").text((d) => d.sido);
+    buttons.append("span").attr("class", "name").text((d) => d.name);
     buttons.append("span").attr("class", "points").text((d) => d.points);
   }
 
@@ -288,7 +316,10 @@
   function renderDetail() {
     const code = state.selected;
     picked.hidden = !code;
-    if (!code) return;
+    if (!code) {
+      d3.select("#detail").html('<p class="note">지도에서 지역을 선택하면 시간별 예보가 표시됩니다.</p>');
+      return;
+    }
     picked.innerHTML = "<b></b> · <span></span>";
     picked.querySelector("b").textContent = regions[code].name;
     picked.querySelector("span").textContent = summary(code);
