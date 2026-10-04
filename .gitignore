@@ -1,4 +1,11 @@
+# 로컬 전용
+.env
 __pycache__/
 .DS_Store
-.env
+
+# 자동 수집되는 데이터 (배포할 때 새로 만들어짐)
 web/data/weather_latest.json
+
+# 웹 앱과 무관한 문서·작업 파일 (기획, 공부 노트, 디자인 참고 사진, AI 작업 지침)
+docs/
+CLAUDE.md

@@ -1,17 +1,28 @@
+/* 영문 글자는 Montserrat, 그 밖(한글·한자·숫자·특수문자)은 Pretendard JP.
+   Montserrat을 영문 알파벳 범위로만 한정해서, 나머지 글자는 다음 글꼴로 넘어가게 한다. */
+@font-face {
+  font-family: "Montserrat";
+  src: url("../vendor/fonts/montserrat-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0041-005A, U+0061-007A;
+}
+
+/* 색은 직접 찍은 노을 사진(docs/color.jpeg)에서 뽑았다:
+   하늘 위쪽 남색 #393967 → 보라 #5e4273 → 장미색 #964865 → 지평선 노을 #b74d63, 건물 실루엣 #050a14 */
 :root {
-  --bg: #faf9f5;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f0eee6;
-  --text: #1f1e1d;
-  --muted: #6b6a65;
-  --border: #e3e0d6;
-  --accent: #d97757;
-  --accent-strong: #c6613f;
+  --surface-2: #f4f2f8;
+  --text: #1a1b2e;
+  --muted: #6a6880;
+  --border: #e7e4ee;
+  --accent: #4b4273;
+  --accent-strong: #393967;
   --map-stroke: #ffffff;
-  --no-data: #e9e6dc;
-  --shadow: 0 1px 2px rgba(31, 30, 29, 0.04), 0 8px 24px rgba(31, 30, 29, 0.05);
-  --serif: ui-serif, "Iowan Old Style", Georgia, "AppleMyungjo", "Noto Serif KR", serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
+  --no-data: #dedce4;
+  --shadow: 0 1px 2px rgba(26, 27, 46, 0.04), 0 8px 24px rgba(26, 27, 46, 0.06);
+  --font: "Montserrat", "Pretendard JP Variable", "Pretendard JP", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   /* 글씨 크기는 이 네 가지만 쓴다 */
   --fs-s: 12px;
   --fs-m: 15px;
@@ -19,16 +30,19 @@
   --fs-xl: 30px;
 }
 
+/* 다크 모드는 사진의 밤 실루엣 그대로 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #262624;
-    --surface: #30302e;
-    --surface-2: #3a3a37;
-    --text: #f5f4ee;
-    --muted: #a6a39a;
-    --border: #45443f;
-    --map-stroke: #262624;
-    --no-data: #3f3e3a;
+    --bg: #070b15;
+    --surface: #10152a;
+    --surface-2: #1b2038;
+    --text: #f1eef6;
+    --muted: #a09cb5;
+    --border: #2a2f4a;
+    --accent: #b74d63;
+    --accent-strong: #e79aa8;
+    --map-stroke: #070b15;
+    --no-data: #262a3f;
     --shadow: none;
   }
 }
@@ -40,7 +54,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--sans);
+  font-family: var(--font);
   font-size: var(--fs-m);
   line-height: 1.5;
 }
@@ -62,11 +76,10 @@ button, input { font: inherit; color: inherit; }
 .logo { display: block; flex: none; }
 h1 {
   margin: 0;
-  font-family: var(--serif);
-  font-weight: 500;
+  font-weight: 600;
   font-size: var(--fs-xl);
   line-height: 1.1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 .sub { margin: 6px 0 0 6px; color: var(--muted); }
 #menu { display: none; margin-left: auto; }
@@ -106,7 +119,7 @@ h1 {
   cursor: pointer;
 }
 .region:hover { stroke: var(--text); stroke-width: 1.2; }
-.region.selected { stroke: var(--accent-strong); stroke-width: 2.2; }
+.region.selected { stroke: var(--text); stroke-width: 2.2; }
 .sido-border {
   fill: none;
   stroke: var(--text);
@@ -191,7 +204,7 @@ h1 {
 }
 .side > section { padding: 14px 0; border-bottom: 1px solid var(--border); }
 .side-head { display: none; }
-h2 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: var(--fs-l); }
+h2 { margin: 0; font-weight: 600; font-size: var(--fs-l); }
 h3 { margin: 0 0 8px; font-size: var(--fs-s); font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
 .note { margin: 8px 0 0; font-size: var(--fs-s); color: var(--muted); }
 .side > .note { margin: 10px 0; }
@@ -237,7 +250,7 @@ h3 { margin: 0 0 8px; font-size: var(--fs-s); font-weight: 600; color: var(--mut
 .ranking .points { font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .now { display: flex; align-items: baseline; gap: 10px; margin: 8px 0 12px; }
-.now .temp { font-family: var(--serif); font-size: var(--fs-xl); line-height: 1; }
+.now .temp { font-size: var(--fs-xl); font-weight: 600; line-height: 1; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
 .stat { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
 .stat span { display: block; font-size: var(--fs-s); color: var(--muted); }
@@ -249,7 +262,7 @@ table.hourly { width: 100%; border-collapse: collapse; font-size: var(--fs-s); f
 .hourly th:nth-child(-n+2), .hourly td:nth-child(-n+2) { text-align: left; }
 .hourly tbody tr { cursor: pointer; }
 .hourly tbody tr:hover { background: var(--surface-2); }
-.hourly tr.current { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.hourly tr.current { background: color-mix(in srgb, var(--accent) 18%, transparent); }
 
 /* ---- 모바일: 지도 + 슬라이더만 남기고 나머지는 서랍 메뉴로 ---- */
 @media (max-width: 860px) {
@@ -274,7 +287,7 @@ table.hourly { width: 100%; border-collapse: collapse; font-size: var(--fs-s); f
   }
   .map-wrap { flex: 1; min-height: 0; }
   #map { position: absolute; inset: 0; height: 100%; }
-  .legend { right: 0; top: 0; }
+  .legend { right: 0; top: auto; bottom: 6px; }
   .legend-bar { width: 110px; }
   .legend-items { max-width: 150px; }
   .picked { display: block; left: 0; bottom: 6px; }

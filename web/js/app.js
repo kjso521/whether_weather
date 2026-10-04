@@ -1,30 +1,34 @@
 /* global d3, topojson, Scores */
 (async function () {
+  // 색은 노을 사진(docs/color.jpeg)에서 뽑은 팔레트를 쓴다. 창문 불빛의 따뜻한 색/차가운 색이 맑음/비.
   const WEATHER = {
-    clear: { label: "맑음", color: "#f3c96b" },
-    partly: { label: "구름많음", color: "#ddd8c8" },
-    cloudy: { label: "흐림", color: "#a9a69b" },
-    rain: { label: "비", color: "#5b8db8" },
-    sleet: { label: "비/눈", color: "#8a9cc9" },
-    snow: { label: "눈", color: "#c9d6e8" },
-    shower: { label: "소나기", color: "#3f6f9a" },
+    clear: { label: "맑음", color: "#f2c48a" },
+    partly: { label: "구름많음", color: "#dcd9e6" },
+    cloudy: { label: "흐림", color: "#a39fb3" },
+    rain: { label: "비", color: "#6f9cc0" },
+    sleet: { label: "비/눈", color: "#8f8bb5" },
+    snow: { label: "눈", color: "#cfd9ea" },
+    shower: { label: "소나기", color: "#456f96" },
   };
   const PTY_KIND = { 1: "rain", 2: "sleet", 3: "snow", 4: "shower" };
   const SKY_KIND = { 1: "clear", 3: "partly", 4: "cloudy" };
-  const LOW = "#f0eee6"; // 연속 색상 척도의 낮은 쪽(배경과 같은 계열)
-  const SCORE_SCALE = d3.scaleLinear([0, 50, 100], [LOW, "#f1c98b", "#c6613f"]).clamp(true);
+  const LOW = "#f1eff6"; // 연속 색상 척도의 낮은 쪽(배경과 같은 계열)
+  // 지수: 나쁨(어두운 남색 하늘) → 보통(옅은 연보라) → 좋음(지평선의 노을빛)
+  const SCORE_SCALE = d3
+    .scaleLinear([0, 25, 50, 75, 100], ["#454475", "#8f8bb5", "#ece8f1", "#e79aa8", "#c9405f"])
+    .clamp(true);
 
   // 지도에 칠할 수 있는 층. type: "score"(출사 지수) | "weather"(범주형 날씨) | "value"(예보 값)
   const SCORE_LAYERS = Scores.MODES.map((mode) => ({ ...mode, type: "score", unit: "점", scale: SCORE_SCALE }));
   const WEATHER_LAYERS = [
     { id: "weather", label: "날씨", type: "weather" },
-    { id: "POP", label: "강수확률", type: "value", unit: "%", scale: d3.scaleLinear([0, 100], [LOW, "#2f6690"]).clamp(true) },
+    { id: "POP", label: "강수확률", type: "value", unit: "%", scale: d3.scaleLinear([0, 100], [LOW, "#456f96"]).clamp(true) },
     {
       id: "TMP", label: "기온", type: "value", unit: "°",
-      scale: d3.scaleLinear([-10, 0, 10, 20, 30, 38], ["#3b6fa0", "#9dbcd4", LOW, "#f1c98b", "#d97757", "#a8432a"]).clamp(true),
+      scale: d3.scaleLinear([-10, 0, 10, 20, 30, 38], ["#393967", "#8f8bb5", LOW, "#f2c48a", "#d4566e", "#8e2f4a"]).clamp(true),
     },
-    { id: "WSD", label: "풍속", type: "value", unit: "m/s", scale: d3.scaleLinear([0, 12], [LOW, "#3f7d6e"]).clamp(true) },
-    { id: "REH", label: "습도", type: "value", unit: "%", scale: d3.scaleLinear([0, 100], [LOW, "#4a6fa5"]).clamp(true) },
+    { id: "WSD", label: "풍속", type: "value", unit: "m/s", scale: d3.scaleLinear([0, 12], [LOW, "#5e4273"]).clamp(true) },
+    { id: "REH", label: "습도", type: "value", unit: "%", scale: d3.scaleLinear([0, 100], [LOW, "#4f6b82"]).clamp(true) },
   ];
   const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
   const RELATIVE_DAY = { "-1": "어제", 0: "오늘", 1: "내일", 2: "모레" };
@@ -264,7 +268,7 @@
       .selectAll("span")
       .data([domain[0], domain.at(-1)])
       .join("span")
-      .text((d) => `${d}${unit}`);
+      .text((d, i) => (type === "score" ? ["나쁨", "좋음"][i] : `${d}${unit}`));
   }
 
   // ---- 추천 순위 ----
