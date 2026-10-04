@@ -1,0 +1,47 @@
+name: 예보 수집 및 배포
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # 기상청 발표 시각(KST 02, 05, ..., 23시) 20분 뒤. cron은 UTC 기준이라 KST-9시간.
+    - cron: "20 2,5,8,11,14,17,20,23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: 테스트
+        run: python -m unittest discover -s tests
+      - name: 직전 배포 데이터 내려받기 (지난 시각을 이어받기 위함)
+        run: |
+          curl -fsSL "${{ steps.pages.outputs.base_url }}/data/weather_latest.json" \
+            -o web/data/weather_latest.json || echo "이전 데이터 없음 - 새로 시작"
+      - name: 예보 수집
+        env:
+          KMA_SERVICE_KEY: ${{ secrets.KMA_SERVICE_KEY }}
+        run: python scripts/collect.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4

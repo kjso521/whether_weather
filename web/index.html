@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#faf9f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#262624" media="(prefers-color-scheme: dark)">
+  <title>whether weather — 출사·나들이 전국 웨더맵</title>
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <img class="logo" src="logo.svg" width="32" height="32" alt="">
+    <h1>whether weather</h1>
+    <p class="sub">출사와 나들이를 위한 전국 시·군·구 시간별 예보 지도</p>
+    <button id="menu" class="icon-btn" type="button" aria-label="메뉴 열기" aria-controls="side" aria-expanded="false">☰</button>
+  </header>
+
+  <main class="layout">
+    <section class="card map-card">
+      <div class="map-wrap">
+        <svg id="map" role="img" aria-label="전국 시군구 지도"></svg>
+        <div class="legend" id="legend"></div>
+        <button class="picked" id="picked" type="button" hidden></button>
+        <div class="tooltip" id="tooltip" hidden></div>
+      </div>
+      <div class="timeline">
+        <button id="play" class="icon-btn" type="button" aria-label="재생">▶</button>
+        <input id="hour" type="range" step="1" aria-label="시각">
+        <output id="hour-label" for="hour"></output>
+      </div>
+    </section>
+
+    <div class="backdrop" id="backdrop" hidden></div>
+    <aside class="card side" id="side" aria-label="설정과 상세 정보">
+      <div class="side-head">
+        <h2>메뉴</h2>
+        <button id="close" class="icon-btn" type="button" aria-label="메뉴 닫기">✕</button>
+      </div>
+      <section>
+        <h3>출사 지수</h3>
+        <div class="chips" id="score-chips"></div>
+        <p class="note" id="layer-note"></p>
+      </section>
+      <section>
+        <h3>날씨</h3>
+        <div class="chips" id="weather-chips"></div>
+      </section>
+      <section>
+        <h3>날짜</h3>
+        <div class="chips" id="date-chips"></div>
+      </section>
+      <section id="ranking-section">
+        <h3>이 시각 추천 지역</h3>
+        <ol class="ranking" id="ranking"></ol>
+      </section>
+      <section id="detail">
+        <p class="note">지도에서 지역을 선택하면 시간별 예보가 표시됩니다.</p>
+      </section>
+      <p class="note" id="meta"></p>
+      <p class="note">날씨: 기상청 단기예보 · 행정구역 경계: 통계청 통계지리정보서비스(2018, 공공누리 제1유형)</p>
+    </aside>
+  </main>
+
+  <script src="vendor/d3.min.js"></script>
+  <script src="vendor/topojson-client.min.js"></script>
+  <script src="vendor/suncalc.js"></script>
+  <script src="js/scores.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
