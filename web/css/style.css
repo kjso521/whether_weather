@@ -11,7 +11,6 @@
   --accent: #6f68a8;
   --accent-strong: #4b4273;
   --map-stroke: #ffffff;
-  --sido-stroke: #ffffff; /* 시·도 경계도 흰색으로 통일하고 굵기로만 구분한다 */
   --no-data: #e6e4ea;
   --shadow: 0 1px 2px rgba(26, 27, 46, 0.04), 0 8px 24px rgba(26, 27, 46, 0.06);
   /* 영문·숫자는 Petrona, 한글은 결이 비슷한 부드러운 명조(고운바탕) */
@@ -33,9 +32,6 @@
     --border: #2a2f4a;
     --accent: #c2657c;
     --accent-strong: #e79aa8;
-    /* 다크 모드의 경계는 밝은 선이 아니라 배경색의 "틈"으로 그린다. 밝은 선은 색면 위에서 뿌옇게 번져 보인다. */
-    --map-stroke: #05070f;
-    --sido-stroke: #05070f;
     --no-data: #1e2338;
     --shadow: none;
   }
@@ -119,13 +115,7 @@ h1 {
   .region:hover { stroke: var(--text); stroke-width: 1.2; }
 }
 .region.selected { stroke: var(--text); stroke-width: 2.2; }
-.sido-border {
-  fill: none;
-  stroke: var(--sido-stroke);
-  stroke-width: 1.6;
-  vector-effect: non-scaling-stroke;
-  pointer-events: none;
-}
+
 
 .legend, .picked {
   position: absolute;

@@ -138,10 +138,8 @@
   const svg = d3.select("#map");
   const object = Object.values(topo.objects)[0];
   const features = topojson.feature(topo, object).features;
-  const sidoMesh = topojson.mesh(topo, object, (a, b) => a.properties.code.slice(0, 2) !== b.properties.code.slice(0, 2));
   const layer = svg.append("g");
   const paths = layer.selectAll("path.region").data(features).join("path").attr("class", "region");
-  const sidoPath = layer.append("path").attr("class", "sido-border");
   const zoom = d3.zoom().scaleExtent([1, 10]).on("zoom", (event) => layer.attr("transform", event.transform));
   svg.call(zoom);
 
@@ -151,7 +149,6 @@
     svg.attr("viewBox", `0 0 ${width} ${height}`);
     const path = d3.geoPath(d3.geoMercator().fitSize([width, height], MAINLAND_EXTENT));
     paths.attr("d", path);
-    sidoPath.attr("d", path(sidoMesh));
     svg.call(zoom.transform, d3.zoomIdentity);
   }
   layoutMap();
@@ -388,7 +385,6 @@
   function render() {
     paths.attr("fill", (d) => fillOf(d.properties.code)).classed("selected", (d) => d.properties.code === state.selected);
     paths.filter((d) => d.properties.code === state.selected).raise();
-    sidoPath.raise();
 
     slider.value = state.index;
     hourLabel.textContent = timeLabel(state.index);
