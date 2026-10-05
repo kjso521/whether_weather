@@ -60,12 +60,18 @@
       <div class="map-wrap">
         <svg id="map" role="img" aria-label="전국 시군구 지도"></svg>
         <div class="legend" id="legend"></div>
-        <div class="stale" id="stale" role="status" hidden></div>
+        <button class="banner" id="banner" type="button" hidden></button>
+        <button class="map-reset" id="map-reset" type="button" aria-label="지도 원래 크기로" title="지도 원래 크기로" hidden>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <button class="picked" id="picked" type="button" hidden></button>
         <div class="tooltip" id="tooltip" hidden></div>
       </div>
       <div class="timeline">
-        <output id="hour-label" for="hour"></output>
+        <div class="timeline-head">
+          <output id="hour-label" for="hour"></output>
+          <button class="step-btn" id="hour-now" type="button" title="현재 시각으로">지금</button>
+        </div>
         <div class="timeline-row">
           <button class="step-btn" id="hour-prev" type="button" aria-label="1시간 전">−1h</button>
           <input id="hour" type="range" step="1" aria-label="시각">
