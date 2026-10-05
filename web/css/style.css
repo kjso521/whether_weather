@@ -151,6 +151,19 @@ h1 {
 .legend-ticks { display: flex; justify-content: space-between; margin-top: 3px; }
 
 /* 모바일에서 선택한 지역을 지도 위에 한 줄로 보여준다 (누르면 메뉴의 상세로 이동) */
+.stale {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--accent);
+  color: var(--accent-strong);
+  font-size: var(--fs-s);
+  font-weight: 600;
+}
+.stale[hidden] { display: none; }
 .picked { display: none; left: 4px; bottom: 4px; cursor: pointer; text-align: left; }
 .picked b { font-weight: 600; }
 

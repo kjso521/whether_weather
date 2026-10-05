@@ -469,6 +469,18 @@
   const meta = document.getElementById("meta");
   meta.textContent = `예보 발표 ${weather.baseTime.slice(5, 16).replace("-", ".").replace("T", " ")}${weather.sample ? " · 샘플 데이터(실제 날씨 아님)" : ""}`;
 
+  // 예약 실행이 밀리거나 실패해 예보가 오래되면 지도 위에 알린다.
+  // 발표는 3시간마다라서, 발표 후 4시간이 지나도 새 발표분이 없으면 1시간 넘게 늦어진 것이다.
+  const STALE_AFTER = 4 * 3600e3;
+  const stale = document.getElementById("stale");
+  function updateStale() {
+    const late = !weather.sample && Date.now() - Date.parse(weather.baseTime) > STALE_AFTER;
+    stale.hidden = !late;
+    if (late) stale.textContent = `⚠ 예보 갱신이 늦어지고 있어요 (${hourOf(weather.baseTime)}시 발표)`;
+  }
+  updateStale();
+  setInterval(updateStale, 60e3);
+
   render();
 })().catch((error) => {
   document.querySelector(".map-wrap").textContent = `데이터를 불러오지 못했습니다: ${error.message}`;
