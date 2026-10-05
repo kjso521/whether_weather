@@ -172,6 +172,7 @@ h1 {
   transition: opacity 0.3s;
 }
 .banner.warn { color: var(--accent-strong); font-weight: 600; }
+.banner svg { width: 1em; height: 1em; margin-left: 4px; vertical-align: -0.15em; }
 .banner.fading { opacity: 0; }
 .map-reset[hidden] { display: none; }
 .meta-line { display: flex; align-items: center; gap: 6px; }
