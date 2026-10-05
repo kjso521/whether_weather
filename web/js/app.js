@@ -475,6 +475,10 @@
     render();
   });
 
+  // 홈 화면에 설치한 앱에는 브라우저 새로고침이 없어서 버튼을 둔다.
+  // 서비스 워커가 네트워크를 먼저 보므로 다시 불러오면 최신 예보와 화면이 함께 들어온다.
+  document.getElementById("reload").addEventListener("click", () => location.reload());
+
   const meta = document.getElementById("meta");
   meta.textContent = `예보 발표 ${weather.baseTime.slice(5, 16).replace("-", ".").replace("T", " ")}${weather.sample ? " · 샘플 데이터(실제 날씨 아님)" : ""}`;
 
