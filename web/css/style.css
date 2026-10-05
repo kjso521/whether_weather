@@ -345,7 +345,9 @@ table.hourly { width: 100%; border-collapse: collapse; font-size: var(--fs-s); f
 
 /* ---- 모바일: 지도 + 슬라이더만 남기고 나머지는 서랍 메뉴로 ---- */
 @media (max-width: 860px) {
-  body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  /* 100dvh는 홈 화면 앱에서 새로고침할 때 실제 화면보다 크게 잡혀 아래가 잘리는 일이 있어서,
+     높이 단위 대신 화면 네 모서리에 고정해 실제 보이는 크기를 그대로 쓴다 */
+  body { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
   .top { width: 100%; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; }
   .logo { width: 26px; height: 26px; }
   .sub { display: none; }
