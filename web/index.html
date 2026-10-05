@@ -63,8 +63,12 @@
         <div class="tooltip" id="tooltip" hidden></div>
       </div>
       <div class="timeline">
-        <input id="hour" type="range" step="1" aria-label="시각">
         <output id="hour-label" for="hour"></output>
+        <div class="timeline-row">
+          <button class="step-btn" id="hour-prev" type="button" aria-label="1시간 전">−1h</button>
+          <input id="hour" type="range" step="1" aria-label="시각">
+          <button class="step-btn" id="hour-next" type="button" aria-label="1시간 후">+1h</button>
+        </div>
       </div>
     </section>
 

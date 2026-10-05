@@ -287,6 +287,17 @@
     state.index = Number(slider.value);
     render();
   });
+  // 슬라이더는 손가락으로 한 칸씩 옮기기 어려워서 앞뒤 버튼을 둔다 (먼 미래는 예보가 3시간 간격이라 한 칸 = 3시간)
+  const prevBtn = document.getElementById("hour-prev");
+  const nextBtn = document.getElementById("hour-next");
+  const stepHour = (delta) => {
+    const next = Math.min(hours.length - 1, Math.max(0, state.index + delta));
+    if (next === state.index) return;
+    state.index = next;
+    render();
+  };
+  prevBtn.addEventListener("click", () => stepHour(-1));
+  nextBtn.addEventListener("click", () => stepHour(1));
 
   // ---- 범례 ----
   function renderLegend() {
@@ -424,6 +435,8 @@
 
     slider.value = state.index;
     hourLabel.textContent = timeLabel(state.index);
+    prevBtn.disabled = state.index === 0;
+    nextBtn.disabled = state.index === hours.length - 1;
 
     updateScoreChips();
     updateWeatherChips();
