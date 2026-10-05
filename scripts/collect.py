@@ -21,6 +21,9 @@ PUBLISH_DELAY = timedelta(minutes=15)  # 발표 후 API에 반영될 때까지 �
 PAGE_SIZE = 1000
 WORKERS = 8
 RETRIES = 3
+TIMEOUT = 15  # 초. 기상청 서버가 응답하지 않을 때 오래 붙잡혀 있지 않게 짧게 둔다
+PROBE_ROUNDS = 4  # 본 수집 전 격자 하나로 서버 상태를 확인하는 횟수
+PROBE_WAIT = 60  # 확인 실패 시 다음 확인까지 기다리는 시간(초)
 
 
 def latest_base_time(now):
@@ -57,7 +60,7 @@ def fetch_page(service_key, base, nx, ny, page):
         "nx": nx,
         "ny": ny,
     })
-    with urllib.request.urlopen(f"{API_URL}?{query}", timeout=30) as res:
+    with urllib.request.urlopen(f"{API_URL}?{query}", timeout=TIMEOUT) as res:
         text = res.read().decode("utf-8")
     try:
         response = json.loads(text)["response"]
@@ -103,6 +106,35 @@ def read_service_key():
     return key
 
 
+def previous_base_time(path=WEATHER_PATH):
+    """직전에 배포된 파일의 발표 시각. 없거나 샘플이면 None."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return None if data.get("sample") else datetime.fromisoformat(data["baseTime"])
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def set_output(name, value):
+    """GitHub Actions 단계 출력값을 남긴다 (로컬 실행에서는 무시)."""
+    out = os.environ.get("GITHUB_OUTPUT")
+    if out:
+        with open(out, "a", encoding="utf-8") as f:
+            f.write(f"{name}={value}\n")
+
+
+def probe(service_key, base, key):
+    """격자 하나로 서버가 응답하는지 확인한다. 안 되면 잠시 기다렸다 다시 시도한다."""
+    for round_ in range(PROBE_ROUNDS):
+        try:
+            return fetch_grid(service_key, base, *key)
+        except Exception as exc:
+            print(f"  서버 확인 실패 ({round_ + 1}/{PROBE_ROUNDS}): {exc}", file=sys.stderr)
+            if round_ < PROBE_ROUNDS - 1:
+                time.sleep(PROBE_WAIT)
+    sys.exit("기상청 API가 응답하지 않습니다 — 기존 파일을 그대로 두고 다음 실행 때 다시 시도합니다.")
+
+
 def main():
     service_key = read_service_key()
     if not service_key:
@@ -112,8 +144,14 @@ def main():
 
     now = datetime.now(KST)
     base = latest_base_time(now)
+    prev = previous_base_time()
+    if prev is not None and prev >= base:
+        print(f"발표 시각 {base:%Y-%m-%d %H:%M} 예보는 이미 받아 두었습니다 — 건너뜁니다.")
+        set_output("updated", "false")
+        return
     grid_keys = load_grid_keys()
     print(f"발표 시각 {base:%Y-%m-%d %H:%M}, 격자 {len(grid_keys)}개 수집 시작")
+    first = probe(service_key, base, grid_keys[0])
 
     def work(key):
         try:
@@ -121,9 +159,9 @@ def main():
         except Exception as exc:  # 한 격자의 실패가 전체를 멈추지 않게 한다
             return key, None, exc
 
-    new, failed = {}, []
+    new, failed = {"%d,%d" % grid_keys[0]: first}, []
     with ThreadPoolExecutor(WORKERS) as pool:
-        for (nx, ny), by_hour, exc in pool.map(work, grid_keys):
+        for (nx, ny), by_hour, exc in pool.map(work, grid_keys[1:]):
             if exc is None:
                 new[f"{nx},{ny}"] = by_hour
             else:
@@ -136,6 +174,7 @@ def main():
 
     records = merge_records(load_records(WEATHER_PATH), new)
     n_hours, n_grids = write_weather(records, base, now)
+    set_output("updated", "true")
     print(f"완료: 격자 {n_grids}개 x {n_hours}시간 (실패 {len(failed)}개) -> {WEATHER_PATH}")
 
 

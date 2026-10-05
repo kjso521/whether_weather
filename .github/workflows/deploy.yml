@@ -4,8 +4,9 @@ on:
   push:
     branches: [main]
   schedule:
-    # 기상청 발표 시각(KST 02, 05, ..., 23시) 20분 뒤. cron은 UTC 기준이라 KST-9시간.
-    - cron: "20 2,5,8,11,14,17,20,23 * * *"
+    # 매시 20분. GitHub 예약 실행은 몇 시간씩 밀리거나 빠지기도 하고 기상청 서버가 잠깐 안 될 때도 있어서
+    # 발표 시각(3시간마다)에만 돌리지 않고 매시간 확인한다. 이미 받은 발표분이면 수집·배포를 건너뛴다.
+    - cron: "20 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -37,13 +38,19 @@ jobs:
           curl -fsSL "${{ steps.pages.outputs.base_url }}/data/weather_latest.json" \
             -o web/data/weather_latest.json || echo "이전 데이터 없음 - 새로 시작"
       - name: 예보 수집
+        id: collect
+        # 코드 수정(push)은 수집이 실패해도 직전 데이터로 배포한다
+        continue-on-error: ${{ github.event_name != 'schedule' }}
         env:
           KMA_SERVICE_KEY: ${{ secrets.KMA_SERVICE_KEY }}
         run: python scripts/collect.py
       - name: 캐시 무효화용 버전 넣기 (css/js 주소 뒤에 커밋 번호를 붙인다)
+        if: github.event_name != 'schedule' || steps.collect.outputs.updated == 'true'
         run: sed -i "s/__VERSION__/${GITHUB_SHA::7}/g" web/index.html
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'schedule' || steps.collect.outputs.updated == 'true'
         with:
           path: web
       - id: deployment
         uses: actions/deploy-pages@v4
+        if: github.event_name != 'schedule' || steps.collect.outputs.updated == 'true'
