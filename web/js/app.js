@@ -490,11 +490,16 @@
   const tips = buildTips();
   let tipIndex = 0;
   let current = null;
+  let newerOnServer = false; // 앱을 켜 둔 사이 서버에 새 예보가 올라왔는지
+  const reloadIcon = document.getElementById("reload").innerHTML; // 사이드바 새로고침 버튼과 같은 아이콘
   function showBanner() {
     const late = !weather.sample && Date.now() - Date.parse(weather.baseTime) > STALE_AFTER;
-    current = late ? { text: `⚠ 예보 갱신이 늦어지고 있어요 (${hourOf(weather.baseTime)}시 발표 기준)` } : tips[tipIndex % tips.length];
-    banner.classList.toggle("warn", late);
+    if (newerOnServer) current = { text: "새 예보가 나왔어요. 눌러서 새로고침", reload: true };
+    else if (late) current = { text: `⚠ 예보 갱신이 늦어지고 있어요 (${hourOf(weather.baseTime)}시 발표 기준)`, reload: true };
+    else current = tips[tipIndex % tips.length];
+    banner.classList.toggle("warn", Boolean(current?.reload));
     banner.textContent = current?.text ?? "";
+    if (current?.reload) banner.insertAdjacentHTML("beforeend", reloadIcon);
     fitBanner();
   }
   // 한 줄에 다 들어가도록 글씨를 조금씩 줄인다 (그래도 넘치면 말줄임)
@@ -520,7 +525,8 @@
   }
   // 지역이 있는 팁을 누르면 그 지역을 선택하고, 아니면 다음 팁으로 넘긴다
   banner.addEventListener("click", () => {
-    if (current?.code) {
+    if (current?.reload) location.reload();
+    else if (current?.code) {
       state.selected = current.code;
       if (current.index != null) state.index = current.index;
       render();
@@ -528,6 +534,30 @@
   });
   showBanner();
   setInterval(nextTip, TIP_EVERY);
+
+  // ---- 새 예보 자동 확인 ----
+  // 홈 화면 앱은 닫지 않고 뒤로 보내 두면 다시 열어도 페이지를 새로 불러오지 않아서, 밤사이 올라온 예보를 놓친다.
+  // 앱이 다시 화면에 나올 때 서버의 발표 시각을 확인해 새 예보가 있으면 바로 다시 불러온다.
+  // 보고 있는 도중에는 갑자기 화면이 바뀌지 않게, 10분마다 확인만 하고 알림 줄에 새로고침 안내를 띄운다.
+  const UPDATE_CHECK_EVERY = 10 * 60e3;
+  async function serverHasNewer() {
+    try {
+      // no-cache라 바뀌지 않았으면 서버가 304로 짧게 답한다
+      const res = await fetch("data/weather_latest.json", { cache: "no-cache" });
+      const { baseTime } = await res.json();
+      return Boolean(baseTime) && baseTime !== weather.baseTime;
+    } catch {
+      return false; // 오프라인 등
+    }
+  }
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible" && (await serverHasNewer())) location.reload();
+  });
+  setInterval(async () => {
+    if (document.visibilityState !== "visible" || newerOnServer || !(await serverHasNewer())) return;
+    newerOnServer = true;
+    showBanner();
+  }, UPDATE_CHECK_EVERY);
 
   // 오늘(저녁 6시 이후면 내일) 예보에서 눈에 띄는 것을 골라 짧은 문장으로 만든다
   function buildTips() {
