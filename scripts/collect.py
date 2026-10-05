@@ -15,14 +15,18 @@ from datetime import datetime, timedelta
 
 from weather_store import KST, ROOT, VARS, WEATHER_PATH, load_grid_keys, load_records, merge_records, write_weather
 
-API_URL = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst"
+API_PATH = "apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst"
+# GitHub 서버(미국)에서는 https 접속이 가끔 막혀 응답이 없다. 그럴 때 http로도 시도해 본다.
+# http는 서비스 키가 암호화되지 않고 오가지만, 무료 조회용 키라 감수한다.
+SCHEMES = ["https", "http"]
+api_url = f"https://{API_PATH}"  # probe()가 응답하는 쪽으로 정한다
 BASE_HOURS = [2, 5, 8, 11, 14, 17, 20, 23]  # 발표 시각
 PUBLISH_DELAY = timedelta(minutes=15)  # 발표 후 API에 반영될 때까지 여유
 PAGE_SIZE = 1000
 WORKERS = 8
 RETRIES = 3
 TIMEOUT = 15  # 초. 기상청 서버가 응답하지 않을 때 오래 붙잡혀 있지 않게 짧게 둔다
-PROBE_ROUNDS = 4  # 본 수집 전 격자 하나로 서버 상태를 확인하는 횟수
+PROBE_ROUNDS = 3  # 본 수집 전 격자 하나로 서버 상태를 확인하는 횟수
 PROBE_WAIT = 60  # 확인 실패 시 다음 확인까지 기다리는 시간(초)
 
 
@@ -60,7 +64,7 @@ def fetch_page(service_key, base, nx, ny, page):
         "nx": nx,
         "ny": ny,
     })
-    with urllib.request.urlopen(f"{API_URL}?{query}", timeout=TIMEOUT) as res:
+    with urllib.request.urlopen(f"{api_url}?{query}", timeout=TIMEOUT) as res:
         text = res.read().decode("utf-8")
     try:
         response = json.loads(text)["response"]
@@ -124,14 +128,20 @@ def set_output(name, value):
 
 
 def probe(service_key, base, key):
-    """격자 하나로 서버가 응답하는지 확인한다. 안 되면 잠시 기다렸다 다시 시도한다."""
+    """격자 하나로 서버가 응답하는지 확인하고, 응답하는 쪽(https/http)을 이후 수집에 쓴다.
+    둘 다 안 되면 잠시 기다렸다 다시 시도한다."""
+    global api_url
     for round_ in range(PROBE_ROUNDS):
-        try:
-            return fetch_grid(service_key, base, *key)
-        except Exception as exc:
-            print(f"  서버 확인 실패 ({round_ + 1}/{PROBE_ROUNDS}): {exc}", file=sys.stderr)
-            if round_ < PROBE_ROUNDS - 1:
-                time.sleep(PROBE_WAIT)
+        for scheme in SCHEMES:
+            api_url = f"{scheme}://{API_PATH}"
+            try:
+                by_hour = fetch_grid(service_key, base, *key)
+                print(f"  {scheme}로 연결됨")
+                return by_hour
+            except Exception as exc:
+                print(f"  서버 확인 실패 ({round_ + 1}/{PROBE_ROUNDS}, {scheme}): {exc}", file=sys.stderr)
+        if round_ < PROBE_ROUNDS - 1:
+            time.sleep(PROBE_WAIT)
     sys.exit("기상청 API가 응답하지 않습니다 — 기존 파일을 그대로 두고 다음 실행 때 다시 시도합니다.")
 
 
