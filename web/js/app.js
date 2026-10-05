@@ -478,7 +478,7 @@
   const meta = document.getElementById("meta");
   meta.textContent = `예보 발표 ${weather.baseTime.slice(5, 16).replace("-", ".").replace("T", " ")}${weather.sample ? " · 샘플 데이터(실제 날씨 아님)" : ""}`;
 
-  // ---- 지도 위 알림: 예보가 오래되면 경고, 아니면 예보에서 뽑은 팁을 돌려 보여준다 ----
+  // ---- 지도 바로 위 한 줄 알림: 예보가 오래되면 경고, 아니면 예보에서 뽑은 팁을 돌려 보여준다 ----
   // 발표는 3시간마다라서, 발표 후 4시간이 지나도 새 발표분이 없으면 1시간 넘게 늦어진 것이다.
   const STALE_AFTER = 4 * 3600e3;
   const TIP_EVERY = 8000;
@@ -488,11 +488,23 @@
   let current = null;
   function showBanner() {
     const late = !weather.sample && Date.now() - Date.parse(weather.baseTime) > STALE_AFTER;
-    current = late ? { text: `⚠ 예보 갱신이 늦어지고 있어요 (${hourOf(weather.baseTime)}시 발표)` } : tips[tipIndex % tips.length];
+    current = late ? { text: `⚠ 예보 갱신 지연 중 (${hourOf(weather.baseTime)}시 발표)` } : tips[tipIndex % tips.length];
     banner.classList.toggle("warn", late);
-    banner.hidden = !current;
-    if (current) banner.textContent = current.text;
+    banner.textContent = current?.text ?? "";
+    fitBanner();
   }
+  // 한 줄에 다 들어가도록 글씨를 조금씩 줄인다 (그래도 넘치면 말줄임)
+  const BANNER_MIN_PX = 9;
+  function fitBanner() {
+    banner.style.fontSize = "";
+    let size = parseFloat(getComputedStyle(banner).fontSize);
+    while (banner.scrollWidth > banner.clientWidth && size > BANNER_MIN_PX) {
+      size -= 0.5;
+      banner.style.fontSize = `${size}px`;
+    }
+  }
+  window.addEventListener("resize", fitBanner);
+  document.fonts?.ready.then(fitBanner); // 웹 글꼴이 늦게 오면 글자 폭이 바뀐다
   function nextTip() {
     if (banner.classList.contains("warn") || tips.length < 2) return showBanner();
     banner.classList.add("fading");
@@ -551,11 +563,11 @@
 
     if (daytime.length) {
       const rainy = codes.filter((c) => daytime.some((i) => valueAt(c, "PTY", i) > 0));
-      if (rainy.length >= codes.length * 0.6) out.push({ text: `☔ ${dayWord}은 전국 대부분에 비 소식이 있어요. 우산 챙기세요` });
+      if (rainy.length >= codes.length * 0.6) out.push({ text: `☔ ${dayWord} 전국 대부분 비 소식, 우산 챙기세요` });
       else if (rainy.length) {
         const bySido = d3.rollups(rainy, (v) => v.length, (c) => regions[c].sido).sort((a, b) => b[1] - a[1]);
-        out.push({ text: `☔ ${dayWord}은 ${bySido[0][0]} 쪽에 비 소식이 있어요` });
-      } else out.push({ text: `☀ ${dayWord}은 전국에 비 소식이 없어요` });
+        out.push({ text: `☔ ${dayWord} ${bySido[0][0]} 쪽 비 소식` });
+      } else out.push({ text: `☀ ${dayWord} 전국 비 소식 없음` });
 
       // 나들이: 낮 시간 평균 점수가 높은 곳 중 하나를 골라 매번 조금 다르게 보여준다
       const outing = SCORE_LAYERS.find((l) => l.id === "outing");
@@ -568,36 +580,36 @@
         .sort((a, b) => b.v - a.v);
       if (avg.length && avg[0].v >= 60) {
         const pick = avg[Math.floor(Math.random() * Math.min(3, avg.length))];
-        const lines = [`${dayWord}은 ${name(pick.code)} 나들이 어때요?`, `🚶 ${dayWord} 걷기 좋은 곳: ${name(pick.code)}`, `${dayWord} ${name(pick.code)} 날씨가 좋아요. 바람 쐬러 가볼까요?`];
+        const lines = [`${dayWord}은 ${name(pick.code)} 나들이 어때요?`, `🚶 ${dayWord} 걷기 좋은 곳: ${name(pick.code)}`, `🌿 ${dayWord} ${name(pick.code)} 바람 쐬기 좋아요`];
         out.push({ text: lines[Math.floor(Math.random() * lines.length)], code: pick.code, index: daytime[0] });
       }
 
       const hot = extreme("TMP", daytime, 1);
-      if (hot && hot.v >= 28) out.push({ text: `🥵 ${dayWord} 가장 더운 곳은 ${name(hot.code)} (${Math.round(hot.v)}°)`, code: hot.code, index: hot.i });
+      if (hot && hot.v >= 28) out.push({ text: `🥵 ${dayWord} 최고 ${Math.round(hot.v)}° (${name(hot.code)})`, code: hot.code, index: hot.i });
       const windy = extreme("WSD", daytime, 1);
-      if (windy && windy.v >= 9) out.push({ text: `💨 ${name(windy.code)} 쪽은 바람이 강해요 (${Math.round(windy.v)}m/s)`, code: windy.code, index: windy.i });
+      if (windy && windy.v >= 9) out.push({ text: `💨 ${name(windy.code)} 강풍 ${Math.round(windy.v)}m/s`, code: windy.code, index: windy.i });
     }
     const morning = idx((d, h) => d === day && h >= 5 && h <= 8);
     const cold = extreme("TMP", morning, -1);
-    if (cold && cold.v <= 5) out.push({ text: `🧥 ${dayWord} 아침 최저 ${Math.round(cold.v)}° (${name(cold.code)}). 따뜻하게 입으세요`, code: cold.code, index: cold.i });
+    if (cold && cold.v <= 5) out.push({ text: `🧥 ${dayWord} 아침 최저 ${Math.round(cold.v)}° (${name(cold.code)})`, code: cold.code, index: cold.i });
 
     const sunset = best("golden", idx((d, h) => d === day && h >= 15));
-    if (sunset && sunset.v >= 70) out.push({ text: `🌅 ${dayWord} 노을은 ${name(sunset.code)}에서 보기 좋겠어요`, code: sunset.code, index: sunset.i });
+    if (sunset && sunset.v >= 70) out.push({ text: `🌅 ${dayWord} 노을 명소: ${name(sunset.code)}`, code: sunset.code, index: sunset.i });
     const sunrise = best("golden", idx((d, h) => d === addDays(day, 1) && h <= 9));
-    if (sunrise && sunrise.v >= 70) out.push({ text: `🌄 ${nextWord} 일출은 ${name(sunrise.code)} 쪽이 좋아 보여요`, code: sunrise.code, index: sunrise.i });
+    if (sunrise && sunrise.v >= 70) out.push({ text: `🌄 ${nextWord} 일출 명소: ${name(sunrise.code)}`, code: sunrise.code, index: sunrise.i });
     const stars = best("stars", idx((d, h) => (d === day && h >= 19) || (d === addDays(day, 1) && h <= 4)));
-    if (stars && stars.v >= 60) out.push({ text: `✨ ${dayWord} 밤 은하수는 ${name(stars.code)} 쪽이 유망해요`, code: stars.code, index: stars.i });
+    if (stars && stars.v >= 60) out.push({ text: `✨ ${dayWord} 밤 은하수: ${name(stars.code)} 유망`, code: stars.code, index: stars.i });
     const clouds = best("seaOfClouds", idx((d, h) => d === addDays(day, 1) && h <= 9));
-    if (clouds && clouds.v >= 70) out.push({ text: `☁ ${nextWord} 새벽 ${name(clouds.code)}에 운해 가능성이 있어요`, code: clouds.code, index: clouds.i });
+    if (clouds && clouds.v >= 70) out.push({ text: `☁ ${nextWord} 새벽 ${name(clouds.code)} 운해 가능성`, code: clouds.code, index: clouds.i });
 
     // 예보 팁을 섞은 뒤, 사용법 팁을 하나 끼워 둔다
     d3.shuffle(out);
     const howTo = [
-      "지역을 누르면 시간별 예보를 볼 수 있어요",
-      "−1h / +1h 버튼으로 한 시간씩 넘겨 보세요",
-      "'지금' 버튼을 누르면 현재 시각으로 돌아와요",
-      "홈 화면에 추가하면 앱처럼 쓸 수 있어요",
-      "오른쪽 위 '지명'을 누르면 지역 이름이 나와요",
+      "지역을 누르면 시간별 예보가 나와요",
+      "−1h / +1h로 한 시간씩 이동",
+      "'지금'을 누르면 현재 시각으로",
+      "홈 화면에 추가해 앱처럼 쓰기",
+      "'지명'을 누르면 지역 이름 표시",
     ];
     out.push({ text: `💡 ${howTo[Math.floor(Math.random() * howTo.length)]}` });
     return out;
