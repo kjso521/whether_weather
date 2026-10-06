@@ -669,8 +669,6 @@
     return out;
   }
 
-  // 지금이 기본 모드(나들이, 낮 전용)의 대상 시간이 아니면(밤에 열었을 때) 가장 가까운 대상 시각으로 옮긴다
-  jumpToApplicableHour(state.layer);
   render();
 })().catch((error) => {
   document.querySelector(".map-wrap").textContent = `데이터를 불러오지 못했습니다: ${error.message}`;
