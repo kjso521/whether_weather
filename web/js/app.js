@@ -55,8 +55,8 @@
   const MAINLAND_EXTENT = { type: "MultiPoint", coordinates: [[125.9, 33.1], [129.7, 38.65]] };
   const KOREA_CENTER = { lat: 36.3, lon: 127.8 }; // 모드 대상 시간대를 찾을 때 쓰는 기준점
 
-  const [topo, regions, weather] = await Promise.all(
-    ["data/sigungu.topo.json", "data/regions.json", "data/weather_latest.json"].map((url) =>
+  const [topo, regions, regionMeta, weather] = await Promise.all(
+    ["data/sigungu.topo.json", "data/regions.json", "data/region_meta.json", "data/weather_latest.json"].map((url) =>
       // no-cache: 저장된 사본을 쓰기 전에 서버에 바뀌었는지 물어본다 (예보가 3시간마다 갱신되므로)
       fetch(url, { cache: "no-cache" }).then((res) => {
         if (!res.ok) throw new Error(`${url}: ${res.status}`);
@@ -93,7 +93,14 @@
     return SKY_KIND[valueAt(code, "SKY", index)] ?? null;
   };
   const scoreAt = (code, layer, index) =>
-    Scores.score(layer.id, { lat: regions[code].lat, lon: regions[code].lon, hours: hourDates, index, series: seriesOf(code) });
+    Scores.score(layer.id, {
+      lat: regions[code].lat,
+      lon: regions[code].lon,
+      hours: hourDates,
+      index,
+      series: seriesOf(code),
+      meta: regionMeta[code],
+    });
   // 현재 층에서 한 지역·시각의 숫자 값 (날씨 층은 숫자가 없으므로 null)
   const layerValue = (code, layer, index) =>
     layer.type === "score" ? scoreAt(code, layer, index) : layer.type === "value" ? valueAt(code, layer.id, index) : null;
@@ -662,6 +669,8 @@
     return out;
   }
 
+  // 지금이 기본 모드(나들이, 낮 전용)의 대상 시간이 아니면(밤에 열었을 때) 가장 가까운 대상 시각으로 옮긴다
+  jumpToApplicableHour(state.layer);
   render();
 })().catch((error) => {
   document.querySelector(".map-wrap").textContent = `데이터를 불러오지 못했습니다: ${error.message}`;

@@ -32,7 +32,9 @@ jobs:
       - id: pages
         uses: actions/configure-pages@v5
       - name: 테스트
-        run: python -m unittest discover -s tests
+        run: |
+          python -m unittest discover -s tests
+          sh tests/js/run.sh
       - name: 직전 배포 데이터 내려받기 (지난 시각을 이어받기 위함)
         run: |
           curl -fsSL "${{ steps.pages.outputs.base_url }}/data/weather_latest.json" \
