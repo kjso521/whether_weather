@@ -10,7 +10,7 @@ const Scores = (function () {
   const SKY_CLEAR = 1, SKY_PARTLY = 3; // 기상청 SKY: 1 맑음, 3 구름많음, 4 흐림 (2는 쓰지 않음)
 
   const MODES = [
-    { id: "outing", label: "나들이", note: "낮(9~18시)만 표시 · 체감온도 18~24°, 비·바람·습도로 본 쾌적도" },
+    { id: "outing", label: "나들이", note: "체감온도 18~24°가 최적 · 비·바람·습도로 본 쾌적도 (밤 산책도 같은 기준)" },
     { id: "golden", label: "일출·일몰", note: "일출·일몰 전후 1시간만 표시 · 구름이 적당히 있고 공기가 맑을 때 높음" },
     { id: "stars", label: "은하수", note: "완전히 어두운 밤만 표시 · 맑음, 광공해(도시 불빛), 달빛, 습도, 고도 반영" },
     { id: "seaOfClouds", label: "운해", note: "새벽~아침만 표시 · 호수·강·분지 지형, 높은 습도, 약한 바람, 큰 일교차일 때 높음" },
@@ -19,7 +19,6 @@ const Scores = (function () {
   // 메타데이터가 없는 지역은 중간값으로 본다
   const DEFAULT_META = { bortle: 5, elev: 100, water: false, basin: false };
 
-  const OUTING_HOURS = [9, 18]; // KST, 양 끝 포함
   const GOLDEN_WINDOW_MS = 1 * HOUR_MS;
   const SEA_BEFORE_MS = 2 * HOUR_MS; // 일출 2시간 전부터
   const SEA_AFTER_MS = 2.5 * HOUR_MS; // 일출 2시간 반 뒤(대략 9시)까지
@@ -29,7 +28,6 @@ const Scores = (function () {
   const clamp = (value) => Math.max(0, Math.min(100, Math.round(value)));
   const ramp = (value, from, to) => Math.max(0, Math.min(1, (value - from) / (to - from)));
   const degrees = (radians) => (radians * 180) / Math.PI;
-  const kstHour = (time) => new Date(time.getTime() + KST_OFFSET_MS).getUTCHours();
 
   const sunCache = new Map();
   // time이 속한 KST 날짜의 일출·일몰 시각
@@ -47,10 +45,7 @@ const Scores = (function () {
   // 모드가 그 시각·장소에 해당하는지 (날씨와 무관).
   // 해와 관련된 모드는 고정 시각 대신 실제 해의 위치로 판단해 계절이 바뀌어도 맞게 한다.
   function applies(modeId, lat, lon, time) {
-    if (modeId === "outing") {
-      const h = kstHour(time);
-      return h >= OUTING_HOURS[0] && h <= OUTING_HOURS[1];
-    }
+    if (modeId === "outing") return true; // 낮 나들이도 밤 산책도 같은 기준으로 본다
     if (modeId === "stars") {
       return degrees(SunCalc.getPosition(time, lat, lon).altitude) < ASTRONOMICAL_NIGHT_DEG;
     }

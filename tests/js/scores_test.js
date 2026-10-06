@@ -26,7 +26,7 @@ check("일몰이 18시대", new Date(sun.sunset.getTime() + 9 * 3600e3).getUTCHo
 check("자정 직후에도 같은 KST 날짜의 일출", Scores.sunTimes(SEOUL.lat, SEOUL.lon, hours[1]).sunrise.getTime() === sun.sunrise.getTime());
 
 // ---- 나들이 ----
-check("나들이: 9~18시만 대상", score("outing", 8, flat()) === null && score("outing", 9, flat()) !== null && score("outing", 19, flat()) === null);
+check("나들이: 24시간 대상 (밤 산책 포함)", [0, 9, 14, 21].every((i) => score("outing", i, flat()) !== null));
 check("나들이: 체감 18~24°, 습도 50%, 바람 약함, 맑음이면 100점", score("outing", 14, flat()) === 100);
 check("나들이: 비가 오면 10점 이하", score("outing", 14, flat({ PTY: 1, POP: 80 })) <= 10);
 check("나들이: 강수확률 60%면 크게 감점", score("outing", 14, flat({ POP: 60 })) <= 60);
